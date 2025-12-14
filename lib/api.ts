@@ -1,0 +1,97 @@
+import axios, { InternalAxiosRequestConfig } from 'axios';
+import type { Teacher, Student, Class, Attendance, Payment } from './types';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004';
+
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor to include auth token
+api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Teachers API
+export const teachersApi = {
+  getAll: () => api.get<Teacher[]>('/api/teachers'),
+  getById: (id: string) => api.get<Teacher>(`/api/teachers/${id}`),
+  create: (data: Partial<Teacher>) => api.post<Teacher>('/api/teachers', data),
+  update: (id: string, data: Partial<Teacher>) => api.put<Teacher>(`/api/teachers/${id}`, data),
+  updateStatus: (id: string, status: string) => 
+    api.put(`/api/teachers/${id}/status`, { status }),
+};
+
+// Students API
+export const studentsApi = {
+  getAll: (teacherId?: string) => 
+    api.get<Student[]>('/api/students', { params: { teacherId } }),
+  getById: (id: string) => api.get<Student>(`/api/students/${id}`),
+  create: (data: Partial<Student>) => api.post<Student>('/api/students', data),
+  update: (id: string, data: Partial<Student>) => 
+    api.put<Student>(`/api/students/${id}`, data),
+  delete: (id: string) => api.delete(`/api/students/${id}`),
+};
+
+// Classes API
+export const classesApi = {
+  getAll: (teacherId?: string) => 
+    api.get<Class[]>('/api/classes', { params: { teacherId } }),
+  getById: (id: string) => api.get<Class>(`/api/classes/${id}`),
+  create: (data: Partial<Class>) => api.post<Class>('/api/classes', data),
+  update: (id: string, data: Partial<Class>) => 
+    api.put<Class>(`/api/classes/${id}`, data),
+  delete: (id: string) => api.delete(`/api/classes/${id}`),
+};
+
+// Attendance API
+export const attendanceApi = {
+  getAll: (params?: { 
+    studentId?: string; 
+    classId?: string; 
+    month?: number; 
+    year?: number;
+    teacherId?: string;
+  }) => api.get<Attendance[]>('/api/attendance', { params }),
+  create: (data: Partial<Attendance>) => api.post<Attendance>('/api/attendance', data),
+  bulkCreate: (data: Partial<Attendance>[]) => 
+    api.post<Attendance[]>('/api/attendance/bulk', data),
+  update: (id: string, data: Partial<Attendance>) => 
+    api.put<Attendance>(`/api/attendance/${id}`, data),
+  delete: (id: string) => api.delete(`/api/attendance/${id}`),
+};
+
+// Payments API
+export const paymentsApi = {
+  getAll: (params?: { studentId?: string; classId?: string; teacherId?: string }) => 
+    api.get<Payment[]>('/api/payments', { params }),
+  create: (data: Partial<Payment>) => api.post<Payment>('/api/payments', data),
+  delete: (id: string) => api.delete(`/api/payments/${id}`),
+};
+
+// Reports API
+export const reportsApi = {
+  getAttendanceSummary: (params: { month: number; year: number; teacherId?: string }) =>
+    api.get('/api/reports/attendance-summary', { params }),
+  getStudentReports: (params: { month: number; year: number; teacherId?: string }) =>
+    api.get('/api/reports/student-reports', { params }),
+};
+
+// Web Session API
+export const sessionApi = {
+  generateQR: () => api.post('/api/web-session/generate-qr'),
+  verifySession: (sessionId: string) => 
+    api.post('/api/web-session/verify', { sessionId }),
+  disconnectSession: (sessionId: string) => 
+    api.post('/api/web-session/disconnect', { sessionId }),
+  getActiveSessions: () => api.get('/api/web-session/active'),
+};
+
+export default api;
