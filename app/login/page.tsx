@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import wsService from '@/lib/websocket';
+import webSessionService from '@/lib/webSessionPolling';
 import { useAuthStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 
@@ -18,13 +18,11 @@ export default function QRLoginPage() {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
   useEffect(() => {
-    const socket = wsService.connect();
-
     // Request QR code
     const generateQR = async () => {
       try {
         setIsLoading(true);
-        const data = await wsService.requestQR('teacher');
+        const data = await webSessionService.requestQR('teacher');
         setQrCode(data.qrCode);
         setSessionId(data.sessionId);
         setExpiresAt(data.expiresAt);
@@ -39,7 +37,7 @@ export default function QRLoginPage() {
     generateQR();
 
     // Listen for authentication
-    wsService.onAuthenticated((data) => {
+    webSessionService.onAuthenticated((data) => {
       if (data.success) {
         setIsConnecting(true);
         toast.success('Successfully connected!');
@@ -54,14 +52,8 @@ export default function QRLoginPage() {
       }
     });
 
-    // Listen for QR expiration
-    wsService.onQRExpired(() => {
-      toast.error('QR code expired. Generating new one...');
-      generateQR();
-    });
-
     return () => {
-      wsService.disconnect();
+      webSessionService.disconnect();
     };
   }, [router, setAuth]);
 
