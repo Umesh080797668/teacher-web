@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
 import { teachersApi } from '@/lib/api';
@@ -12,6 +12,10 @@ export default function ProfilePage() {
   const { user, userType, isAuthenticated, updateUser } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showImageOptions, setShowImageOptions] = useState(false);
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -32,8 +36,40 @@ export default function ProfilePage() {
         email: teacher.email || '',
         phone: teacher.phone || '',
       });
+      // @ts-ignore - profilePicture might exist in teacher object
+      if (teacher.profilePicture) {
+        // @ts-ignore
+        setProfileImage(teacher.profilePicture);
+      }
     }
   }, [isAuthenticated, userType, router, teacher]);
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast.error('Image size must be less than 5MB');
+        return;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file');
+        return;
+      }
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      setShowImageOptions(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setProfileImage(null);
+    setImageFile(null);
+    setShowImageOptions(false);
+  };
 
   const handleSave = async () => {
     if (!teacher?._id) return;
@@ -45,19 +81,41 @@ export default function ProfilePage() {
 
     setIsLoading(true);
     try {
-      const response = await teachersApi.update(teacher._id, {
+      const updateData: any = {
         name: formData.name,
         email: formData.email,
         phone: formData.phone || undefined,
-      });
+      };
 
-      updateUser(response.data);
-      toast.success('Profile updated successfully');
-      setIsEditing(false);
+      // Handle profile picture if there's a new image file
+      if (imageFile) {
+        // Convert image to base64 for API
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          updateData.profilePicture = reader.result as string;
+          
+          const response = await teachersApi.update(teacher._id, updateData);
+          updateUser(response.data);
+          toast.success('Profile updated successfully');
+          setIsEditing(false);
+          setImageFile(null);
+          setIsLoading(false);
+        };
+        reader.readAsDataURL(imageFile);
+      } else {
+        // Update without image change
+        if (profileImage) {
+          updateData.profilePicture = profileImage;
+        }
+        const response = await teachersApi.update(teacher._id, updateData);
+        updateUser(response.data);
+        toast.success('Profile updated successfully');
+        setIsEditing(false);
+        setIsLoading(false);
+      }
     } catch (error: any) {
       console.error('Error updating profile:', error);
       toast.error(error.response?.data?.error || 'Failed to update profile');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -69,12 +127,24 @@ export default function ProfilePage() {
         email: teacher.email || '',
         phone: teacher.phone || '',
       });
+      // @ts-ignore
+      setProfileImage(teacher.profilePicture || null);
+      setImageFile(null);
     }
     setIsEditing(false);
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageSelect}
+      />
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -99,10 +169,70 @@ export default function ProfilePage() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           {/* Profile Header */}
           <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-12 text-center">
-            <div className="inline-flex items-center justify-center w-24 h-24 bg-white rounded-full mb-4 shadow-lg">
-              <span className="text-4xl font-bold text-indigo-600">
-                {teacher?.name?.charAt(0)?.toUpperCase() || 'T'}
-              </span>
+            <div className="relative inline-block">
+              <div className="w-24 h-24 bg-white rounded-full shadow-lg overflow-hidden mx-auto mb-4">
+                {profileImage ? (
+                  <img 
+                    src={profileImage} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-4xl font-bold text-indigo-600">
+                      {teacher?.name?.charAt(0)?.toUpperCase() || 'T'}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {isEditing && (
+                <button
+                  onClick={() => setShowImageOptions(!showImageOptions)}
+                  className="absolute bottom-4 right-1/2 translate-x-[calc(50%+2rem)] bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition"
+                >
+                  <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </button>
+              )}
+              {showImageOptions && (
+                <div className="absolute bottom-0 right-1/2 translate-x-[calc(50%+2rem)] translate-y-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-10 min-w-[180px]">
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center text-sm text-gray-700"
+                  >
+                    <svg className="w-5 h-5 mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Choose Photo
+                  </button>
+                  {profileImage && (
+                    <>
+                      <div className="border-t border-gray-200"></div>
+                      <button
+                        onClick={handleRemoveImage}
+                        className="w-full text-left px-4 py-3 hover:bg-red-50 flex items-center text-sm text-red-600"
+                      >
+                        <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Remove Photo
+                      </button>
+                    </>
+                  )}
+                  <div className="border-t border-gray-200"></div>
+                  <button
+                    onClick={() => setShowImageOptions(false)}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center text-sm text-gray-700"
+                  >
+                    <svg className="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">{teacher?.name || 'Teacher'}</h2>
             <p className="text-indigo-100">{teacher?.teacherId}</p>
