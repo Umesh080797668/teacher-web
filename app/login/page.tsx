@@ -9,13 +9,27 @@ import toast from 'react-hot-toast';
 
 export default function QRLoginPage() {
   const router = useRouter();
-  const { setAuth } = useAuthStore();
+  const { setAuth, isAuthenticated, userType } = useAuthStore();
   const [qrCode, setQrCode] = useState<string>('');
   const [sessionId, setSessionId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
 
+  // Check if already authenticated
   useEffect(() => {
+    if (isAuthenticated && userType) {
+      if (userType === 'teacher') {
+        router.push('/dashboard/teacher');
+      } else if (userType === 'admin') {
+        router.push('/dashboard/admin');
+      }
+    }
+  }, [isAuthenticated, userType, router]);
+
+  useEffect(() => {
+    // Don't generate QR if already authenticated
+    if (isAuthenticated) return;
+
     // Request QR code
     const generateQR = async () => {
       try {
