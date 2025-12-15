@@ -21,12 +21,15 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 
 // Teachers API
 export const teachersApi = {
-  getAll: () => api.get<Teacher[]>('/api/teachers'),
+  getAll: (companyId?: string) => 
+    api.get<Teacher[]>('/api/teachers', { params: { companyId } }),
   getById: (id: string) => api.get<Teacher>(`/api/teachers/${id}`),
   create: (data: Partial<Teacher>) => api.post<Teacher>('/api/teachers', data),
   update: (id: string, data: Partial<Teacher>) => api.put<Teacher>(`/api/teachers/${id}`, data),
   updateStatus: (id: string, status: string) => 
     api.put(`/api/teachers/${id}/status`, { status }),
+  getCompanyTeachers: (companyId: string) => 
+    api.get<Teacher[]>(`/api/teachers/company/${companyId}`),
 };
 
 // Students API
@@ -86,12 +89,18 @@ export const reportsApi = {
 
 // Web Session API
 export const sessionApi = {
-  generateQR: () => api.post('/api/web-session/generate-qr'),
+  generateQR: (companyId?: string) => 
+    api.post('/api/web-session/generate-qr', { companyId }),
   verifySession: (sessionId: string) => 
     api.get(`/api/web-session/check-auth/${sessionId}`),
   disconnectSession: (sessionId: string) => 
     api.post('/api/web-session/disconnect', { sessionId }),
-  getActiveSessions: () => api.get('/api/web-session/active'),
+  getActiveSessions: (companyId?: string) => 
+    api.get('/api/web-session/active', { params: { companyId } }),
+  getTeacherSessions: (companyId: string) => 
+    api.get(`/api/web-session/teacher-sessions/${companyId}`),
+  logoutTeacherSession: (sessionId: string) => 
+    api.post('/api/web-session/logout-teacher', { sessionId }),
 };
 
 // Admin API

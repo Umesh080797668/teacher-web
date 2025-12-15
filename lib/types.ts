@@ -6,6 +6,7 @@ export interface Teacher {
   teacherId: string;
   status: 'active' | 'inactive';
   profilePicture?: string;
+  companyId?: string; // Company/Admin association
   createdAt?: string;
   updatedAt?: string;
 }
@@ -56,12 +57,14 @@ export interface WebSession {
   expiresAt: number;
   isActive: boolean;
   teacherId?: string; // For teacher sessions
+  companyId?: string; // For company-specific sessions
 }
 
 export interface QRCodeData {
   sessionId: string;
   timestamp?: number;
   expiresAt?: number;
+  companyId?: string; // Company-specific QR codes
 }
 
 export interface AdminUser {
@@ -70,6 +73,18 @@ export interface AdminUser {
   name: string;
   companyName: string;
   role: 'admin';
+}
+
+export interface TeacherSession {
+  _id: string;
+  teacherId: string;
+  teacherName: string;
+  teacherEmail: string;
+  sessionId: string;
+  deviceInfo?: string;
+  loginTime: string;
+  lastActivity: string;
+  isActive: boolean;
 }
 
 export interface AuthResponse {
