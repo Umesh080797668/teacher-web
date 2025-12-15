@@ -11,7 +11,6 @@ class WebSessionService {
   async requestQR(userType: 'admin' | 'teacher' = 'teacher'): Promise<{
     sessionId: string;
     qrCode: string;
-    expiresAt: number;
   }> {
     try {
       const response = await sessionApi.generateQR();

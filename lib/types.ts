@@ -60,8 +60,8 @@ export interface WebSession {
 
 export interface QRCodeData {
   sessionId: string;
-  timestamp: number;
-  expiresAt: number;
+  timestamp?: number;
+  expiresAt?: number;
 }
 
 export interface AdminUser {

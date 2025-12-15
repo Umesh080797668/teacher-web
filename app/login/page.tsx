@@ -14,8 +14,6 @@ export default function QRLoginPage() {
   const [sessionId, setSessionId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [expiresAt, setExpiresAt] = useState<number>(0);
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
 
   useEffect(() => {
     // Request QR code
@@ -25,7 +23,6 @@ export default function QRLoginPage() {
         const data = await webSessionService.requestQR('teacher');
         setQrCode(data.qrCode);
         setSessionId(data.sessionId);
-        setExpiresAt(data.expiresAt);
         setIsLoading(false);
       } catch (error) {
         console.error('Error generating QR:', error);
@@ -56,29 +53,6 @@ export default function QRLoginPage() {
       webSessionService.disconnect();
     };
   }, [router, setAuth]);
-
-  // Update time remaining
-  useEffect(() => {
-    if (expiresAt > 0) {
-      const interval = setInterval(() => {
-        const remaining = Math.max(0, expiresAt - Date.now());
-        setTimeRemaining(remaining);
-        
-        if (remaining === 0) {
-          clearInterval(interval);
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, [expiresAt]);
-
-  const formatTime = (ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
@@ -126,15 +100,6 @@ export default function QRLoginPage() {
                     alt="QR Code"
                     className="w-64 h-64 mb-4"
                   />
-                )}
-                
-                {timeRemaining > 0 && (
-                  <div className="text-center">
-                    <p className="text-sm text-gray-600 mb-1">Expires in</p>
-                    <p className="text-2xl font-bold text-indigo-600">
-                      {formatTime(timeRemaining)}
-                    </p>
-                  </div>
                 )}
               </div>
             )}

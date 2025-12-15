@@ -49,7 +49,6 @@ class WebSocketService {
   requestQR(userType: 'admin' | 'teacher' = 'teacher'): Promise<{
     sessionId: string;
     qrCode: string;
-    expiresAt: number;
   }> {
     return new Promise((resolve, reject) => {
       if (!this.socket?.connected) {
