@@ -13,8 +13,11 @@ class WebSessionService {
     qrCode: string;
   }> {
     try {
+      console.log('Requesting QR code generation...');
       const response = await sessionApi.generateQR();
       const data = response.data;
+      
+      console.log('QR code generated:', data.sessionId);
       
       this.sessionId = data.sessionId;
       
@@ -36,23 +39,35 @@ class WebSessionService {
       clearInterval(this.pollingInterval);
     }
 
+    console.log('Starting polling for session:', this.sessionId);
+
     this.pollingInterval = setInterval(async () => {
       if (!this.sessionId) return;
 
       try {
+        console.log('Polling session:', this.sessionId);
         const response = await sessionApi.verifySession(this.sessionId);
         const data = response.data;
 
+        console.log('Polling response:', data);
+
         if (data.authenticated && data.success) {
           // Authentication successful
+          console.log('Authentication successful!');
           if (this.onAuthCallback) {
             this.onAuthCallback(data);
           }
           this.stopPolling();
+        } else {
+          console.log('Not authenticated yet, continuing to poll...');
         }
-      } catch (error) {
+      } catch (error: any) {
         // Session might be expired or not found, continue polling
-        console.log('Polling check:', error);
+        if (error?.response?.status === 404) {
+          console.log('Session not found, continuing to poll...');
+        } else {
+          console.log('Polling check error:', error);
+        }
       }
     }, 2000); // Poll every 2 seconds
   }
