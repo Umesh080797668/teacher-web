@@ -3,6 +3,21 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --card-bg: #ffffff;
+  --border-color: #e5e7eb;
+  --input-bg: #ffffff;
+  --input-border: #d1d5db;
+  --modal-bg: #ffffff;
+}
+
+[data-theme="dark"] {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --card-bg: #1e293b;
+  --border-color: #334155;
+  --input-bg: #1e293b;
+  --input-border: #475569;
+  --modal-bg: #1e293b;
 }
 
 @theme inline {
@@ -12,15 +27,47 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Cursor pointer utilities */
+button,
+.cursor-pointer,
+[role="button"],
+[type="button"],
+[type="submit"],
+a,
+select {
+  cursor: pointer;
+}
+
+/* Enhanced input visibility in dark mode */
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background-color: var(--input-bg);
+  color: var(--foreground);
+  border-color: var(--input-border);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder,
+[data-theme="dark"] select::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+/* Modal backgrounds in dark mode */
+[data-theme="dark"] .modal-content {
+  background-color: var(--modal-bg);
+}
+
+/* Card backgrounds in dark mode */
+[data-theme="dark"] .card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
 }
