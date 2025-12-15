@@ -53,6 +53,7 @@ export default function AttendanceViewPage() {
     absent: attendance.filter(a => a.status === 'absent').length,
     late: attendance.filter(a => a.status === 'late').length,
   };
+  const totalStats = stats.present + stats.absent + stats.late;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -204,14 +205,14 @@ export default function AttendanceViewPage() {
         </div>
 
         {/* Chart View */}
-        {showChart && stats.present + stats.absent + stats.late > 0 && (
+        {showChart && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Attendance Overview</h3>
             <div className="h-64 flex items-end justify-center space-x-8">
               <div className="flex flex-col items-center">
                 <div 
                   className="w-24 bg-green-500 rounded-t-lg transition-all duration-500"
-                  style={{ height: `${(stats.present / (stats.present + stats.absent + stats.late)) * 200}px` }}
+                  style={{ height: `${totalStats > 0 ? (stats.present / totalStats) * 200 : 0}px` }}
                 ></div>
                 <p className="mt-4 font-semibold text-gray-700">Present</p>
                 <p className="text-sm text-gray-500">{stats.present}</p>
@@ -219,7 +220,7 @@ export default function AttendanceViewPage() {
               <div className="flex flex-col items-center">
                 <div 
                   className="w-24 bg-red-500 rounded-t-lg transition-all duration-500"
-                  style={{ height: `${(stats.absent / (stats.present + stats.absent + stats.late)) * 200}px` }}
+                  style={{ height: `${totalStats > 0 ? (stats.absent / totalStats) * 200 : 0}px` }}
                 ></div>
                 <p className="mt-4 font-semibold text-gray-700">Absent</p>
                 <p className="text-sm text-gray-500">{stats.absent}</p>
@@ -227,7 +228,7 @@ export default function AttendanceViewPage() {
               <div className="flex flex-col items-center">
                 <div 
                   className="w-24 bg-orange-500 rounded-t-lg transition-all duration-500"
-                  style={{ height: `${(stats.late / (stats.present + stats.absent + stats.late)) * 200}px` }}
+                  style={{ height: `${totalStats > 0 ? (stats.late / totalStats) * 200 : 0}px` }}
                 ></div>
                 <p className="mt-4 font-semibold text-gray-700">Late</p>
                 <p className="text-sm text-gray-500">{stats.late}</p>

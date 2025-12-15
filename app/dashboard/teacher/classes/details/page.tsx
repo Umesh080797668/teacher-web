@@ -267,7 +267,12 @@ export default function ClassDetailsPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">Students in this Class</h2>
             <button
-              onClick={() => setShowAddStudentModal(true)}
+              onClick={() => {
+                // pre-generate student id and show modal (readonly)
+                const generated = `STU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                setNewStudent({ name: '', email: '', studentId: generated });
+                setShowAddStudentModal(true);
+              }}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium flex items-center"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -413,16 +418,15 @@ export default function ClassDetailsPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Student ID (Auto-generated if empty)
+                  Student ID (Auto-generated)
                 </label>
                 <input
                   type="text"
                   value={newStudent.studentId}
-                  onChange={(e) => setNewStudent({ ...newStudent, studentId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-gray-50"
-                  placeholder="Leave empty for auto-generation"
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-mono"
                 />
-                <p className="text-xs text-gray-500 mt-1">Generated automatically if left empty</p>
+                <p className="text-xs text-gray-500 mt-1">This ID is generated automatically and cannot be edited</p>
               </div>
 
               <div>

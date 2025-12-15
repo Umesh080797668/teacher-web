@@ -203,8 +203,8 @@ export default function PaymentsPage() {
             <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white text-opacity-90 text-sm mb-2">Total Revenue</p>
-                  <p className="text-3xl font-bold text-white">LKR {totalRevenue.toFixed(0)}</p>
+                  <p className="text-sm mb-2" style={{ color: 'var(--foreground)', opacity: 0.9 }}>Total Revenue</p>
+                  <p className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>LKR {totalRevenue.toFixed(0)}</p>
                 </div>
                 <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                   <span className="text-2xl">💰</span>
@@ -214,8 +214,8 @@ export default function PaymentsPage() {
             <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-white text-opacity-90 text-sm mb-2">Total Payments</p>
-                  <p className="text-3xl font-bold text-white">{payments.length}</p>
+                  <p className="text-sm mb-2" style={{ color: 'var(--foreground)', opacity: 0.9 }}>Total Payments</p>
+                  <p className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>{payments.length}</p>
                 </div>
                 <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                   <span className="text-2xl">📝</span>

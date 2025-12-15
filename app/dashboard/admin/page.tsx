@@ -6,7 +6,7 @@ import { useAuthStore } from '@/lib/store';
 import { useTheme } from '@/lib/ThemeContext';
 import { teachersApi, classesApi, studentsApi, attendanceApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import type { Teacher, Class, Student } from '@/lib/types';
+import type { Teacher, Class, Student, AdminUser } from '@/lib/types';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -143,7 +143,9 @@ export default function AdminDashboardPage() {
               </div>
               <div>
                 <h1 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>Admin Dashboard</h1>
-                <p className="text-sm" style={{ color: 'var(--foreground)', opacity: 0.7 }}>Welcome, {user?.name}</p>
+                <p className="text-sm" style={{ color: 'var(--foreground)', opacity: 0.7 }}>
+                  {(user as AdminUser)?.companyName ? `${(user as AdminUser)?.companyName} - ${user?.name}` : `Welcome, ${user?.name}`}
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-3">

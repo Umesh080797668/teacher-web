@@ -26,6 +26,7 @@ export default function TeacherDashboardPage() {
     name: '',
     email: '',
     classId: '',
+    studentId: '',
   });
   const [newClass, setNewClass] = useState({
     name: '',
@@ -96,8 +97,8 @@ export default function TeacherDashboardPage() {
     try {
       await studentsApi.create(newStudent);
       toast.success('Student added successfully');
-      setShowAddStudentModal(false);
-      setNewStudent({ name: '', email: '', classId: '' });
+  setShowAddStudentModal(false);
+  setNewStudent({ name: '', email: '', classId: '', studentId: '' });
       loadData();
     } catch (error: any) {
       console.error('Error creating student:', error);
@@ -512,7 +513,12 @@ export default function TeacherDashboardPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold text-gray-900">My Students</h2>
               <button
-                onClick={() => setShowAddStudentModal(true)}
+                onClick={() => {
+                  // generate student id and show modal (readonly)
+                  const generated = `STU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                  setNewStudent({ name: '', email: '', classId: '', studentId: generated });
+                  setShowAddStudentModal(true);
+                }}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium"
               >
                 + Add Student
@@ -829,6 +835,15 @@ export default function TeacherDashboardPage() {
             
             <div className="space-y-4">
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Student ID (Auto-generated)</label>
+                <input
+                  type="text"
+                  value={newStudent.studentId}
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-mono"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Student Name *</label>
                 <input
                   type="text"
@@ -869,7 +884,7 @@ export default function TeacherDashboardPage() {
               <button
                 onClick={() => {
                   setShowAddStudentModal(false);
-                  setNewStudent({ name: '', email: '', classId: '' });
+                  setNewStudent({ name: '', email: '', classId: '', studentId: '' });
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
               >

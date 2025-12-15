@@ -94,4 +94,15 @@ export const sessionApi = {
   getActiveSessions: () => api.get('/api/web-session/active'),
 };
 
+// Admin API
+export const adminApi = {
+  login: (email: string, password: string) => 
+    api.post('/api/admin/login', { email, password }),
+  register: (data: { email: string; password: string; name: string; companyName: string }) => 
+    api.post('/api/admin/register', data),
+  getProfile: () => api.get('/api/admin/profile'),
+  updateProfile: (data: { name?: string; companyName?: string }) => 
+    api.put('/api/admin/profile', data),
+};
+
 export default api;
