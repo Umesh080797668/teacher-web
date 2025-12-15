@@ -9,6 +9,7 @@ interface AuthState {
   isAuthenticated: boolean;
   userType: 'admin' | 'teacher' | null;
   setAuth: (user: Teacher | AdminUser, session: WebSession, token: string) => void;
+  updateUser: (user: Teacher | AdminUser) => void;
   logout: () => void;
 }
 
@@ -29,6 +30,9 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
           userType: session.userType,
         });
+      },
+      updateUser: (user) => {
+        set({ user });
       },
       logout: () => {
         localStorage.removeItem('auth_token');

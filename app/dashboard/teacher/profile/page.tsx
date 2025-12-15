@@ -1,0 +1,258 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/store';
+import { teachersApi } from '@/lib/api';
+import toast from 'react-hot-toast';
+import type { Teacher } from '@/lib/types';
+
+export default function ProfilePage() {
+  const router = useRouter();
+  const { user, userType, isAuthenticated, updateUser } = useAuthStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  });
+
+  const teacher = user as Teacher;
+
+  useEffect(() => {
+    if (!isAuthenticated || userType !== 'teacher') {
+      router.push('/login');
+      return;
+    }
+    
+    if (teacher) {
+      setFormData({
+        name: teacher.name || '',
+        email: teacher.email || '',
+        phone: teacher.phone || '',
+      });
+    }
+  }, [isAuthenticated, userType, router, teacher]);
+
+  const handleSave = async () => {
+    if (!teacher?._id) return;
+
+    if (!formData.name || !formData.email) {
+      toast.error('Name and email are required');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await teachersApi.update(teacher._id, {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || undefined,
+      });
+
+      updateUser(response.data);
+      toast.success('Profile updated successfully');
+      setIsEditing(false);
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast.error(error.response?.data?.error || 'Failed to update profile');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (teacher) {
+      setFormData({
+        name: teacher.name || '',
+        email: teacher.email || '',
+        phone: teacher.phone || '',
+      });
+    }
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => router.back()}
+              className="flex items-center text-gray-600 hover:text-gray-900"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back
+            </button>
+            <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
+            <div className="w-20"></div> {/* Spacer for centering */}
+          </div>
+        </div>
+      </header>
+
+      {/* Content */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          {/* Profile Header */}
+          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-12 text-center">
+            <div className="inline-flex items-center justify-center w-24 h-24 bg-white rounded-full mb-4 shadow-lg">
+              <span className="text-4xl font-bold text-indigo-600">
+                {teacher?.name?.charAt(0)?.toUpperCase() || 'T'}
+              </span>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">{teacher?.name || 'Teacher'}</h2>
+            <p className="text-indigo-100">{teacher?.teacherId}</p>
+          </div>
+
+          {/* Profile Information */}
+          <div className="p-6 space-y-6">
+            {/* Account Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name {isEditing && <span className="text-red-500">*</span>}
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="Enter your full name"
+                    />
+                  ) : (
+                    <p className="text-gray-900 py-2">{teacher?.name || '-'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email {isEditing && <span className="text-red-500">*</span>}
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="Enter your email"
+                    />
+                  ) : (
+                    <p className="text-gray-900 py-2">{teacher?.email || '-'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="Enter your phone number"
+                    />
+                  ) : (
+                    <p className="text-gray-900 py-2">{teacher?.phone || '-'}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teacher ID</label>
+                  <p className="text-gray-900 py-2 font-mono bg-gray-50 px-3 rounded-lg">{teacher?.teacherId || '-'}</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
+                    teacher?.status === 'active' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {teacher?.status || 'active'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Account Details */}
+            <div className="pt-6 border-t border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Account Created</p>
+                  <p className="text-gray-900 font-medium">
+                    {teacher?.createdAt 
+                      ? new Date(teacher.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })
+                      : '-'}
+                  </p>
+                </div>
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-1">Last Updated</p>
+                  <p className="text-gray-900 font-medium">
+                    {teacher?.updatedAt 
+                      ? new Date(teacher.updatedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })
+                      : '-'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3 pt-4">
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={handleCancel}
+                    disabled={isLoading}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    disabled={isLoading}
+                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center"
+                  >
+                    {isLoading ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                >
+                  Edit Profile
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
