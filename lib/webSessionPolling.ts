@@ -53,20 +53,23 @@ class WebSessionService {
 
         if (data.authenticated && data.success) {
           // Authentication successful
-          console.log('Authentication successful!');
+          console.log('Authentication successful!', data);
           if (this.onAuthCallback) {
             this.onAuthCallback(data);
           }
           this.stopPolling();
-        } else {
+        } else if (data.authenticated === false) {
           console.log('Not authenticated yet, continuing to poll...');
+        } else {
+          console.warn('Unexpected response format:', data);
         }
       } catch (error: any) {
-        // Session might be expired or not found, continue polling
+        // Log error but continue polling
+        console.log('Polling error:', error?.response?.status, error?.message);
+        
+        // If session is definitely gone (404), we might want to regenerate
         if (error?.response?.status === 404) {
-          console.log('Session not found, continuing to poll...');
-        } else {
-          console.log('Polling check error:', error);
+          console.warn('Session not found - might need to regenerate QR');
         }
       }
     }, 2000); // Poll every 2 seconds
