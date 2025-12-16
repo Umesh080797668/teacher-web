@@ -51,14 +51,22 @@ export default function AdminDashboardPage() {
   }, []);
 
   const loadData = async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      console.log('loadData: No companyId found');
+      return;
+    }
     
+    console.log('loadData: Starting data load for companyId:', companyId);
     setIsLoading(true);
     try {
+      console.log('loadData: Fetching teachers and sessions...');
       const [teachersRes, sessionsRes] = await Promise.all([
         teachersApi.getAll(companyId),
         sessionApi.getTeacherSessions(companyId),
       ]);
+
+      console.log('loadData: Teachers response:', teachersRes.data);
+      console.log('loadData: Sessions response:', sessionsRes.data);
 
       // Backend now filters by companyIds array, no need to filter on frontend
       setTeachers(teachersRes.data);
@@ -68,6 +76,8 @@ export default function AdminDashboardPage() {
       
       // Show success toast only if we have new active sessions
       const activeSessions = sessions.filter((s: TeacherSession) => s.isActive);
+      console.log('loadData: Active sessions:', activeSessions);
+
       if (activeSessions.length > 0 && qrCheckIntervalRef.current) {
         // Only show toast if we were polling for QR (meaning a new login just happened)
         toast.success('Teacher logged in successfully!');
@@ -147,8 +157,12 @@ export default function AdminDashboardPage() {
 
       qrCheckIntervalRef.current = setInterval(async () => {
         try {
+          // console.log('Polling session status for:', sessionId);
           const verifyResponse = await sessionApi.verifySession(sessionId);
+          // console.log('Poll response:', verifyResponse.data);
+
           if (verifyResponse.data.authenticated) {
+            console.log('Session authenticated! Reloading data...');
             clearInterval(qrCheckIntervalRef.current!);
             setQrCodeData('');
             // Don't show success toast here - it will be shown by loadData
@@ -156,8 +170,9 @@ export default function AdminDashboardPage() {
             await loadData();
             await loadActiveTeachers();
           }
-        } catch {
+        } catch (error) {
           // Session not yet authenticated, continue polling
+          // console.log('Polling error (expected if not auth yet):', error);
         }
       }, 2000);
 
