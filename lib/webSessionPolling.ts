@@ -8,13 +8,13 @@ class WebSessionService {
   /**
    * Generate QR code for login
    */
-  async requestQR(userType: 'admin' | 'teacher' = 'teacher'): Promise<{
+  async requestQR(userType: 'admin' | 'teacher' = 'teacher', companyId?: string): Promise<{
     sessionId: string;
     qrCode: string;
   }> {
     try {
       console.log('Requesting QR code generation...');
-      const response = await sessionApi.generateQR();
+      const response = await sessionApi.generateQR(companyId);
       const data = response.data;
       
       console.log('QR code generated:', data.sessionId);

@@ -62,7 +62,16 @@ export default function AdminDashboardPage() {
 
       // Backend now filters by companyIds array, no need to filter on frontend
       setTeachers(teachersRes.data);
-      setTeacherSessions(sessionsRes.data || []);
+      
+      const sessions = sessionsRes.data || [];
+      setTeacherSessions(sessions);
+      
+      // Show success toast only if we have new active sessions
+      const activeSessions = sessions.filter((s: TeacherSession) => s.isActive);
+      if (activeSessions.length > 0 && qrCheckIntervalRef.current) {
+        // Only show toast if we were polling for QR (meaning a new login just happened)
+        toast.success('Teacher logged in successfully!');
+      }
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
@@ -134,9 +143,11 @@ export default function AdminDashboardPage() {
           const verifyResponse = await sessionApi.verifySession(sessionId);
           if (verifyResponse.data.authenticated) {
             clearInterval(qrCheckIntervalRef.current!);
-            toast.success('Teacher logged in successfully!');
-            loadData();
             setQrCodeData('');
+            // Don't show success toast here - it will be shown by loadData
+            // Just reload the data silently
+            await loadData();
+            await loadActiveTeachers();
           }
         } catch {
           // Session not yet authenticated, continue polling

@@ -46,7 +46,7 @@ class WebSocketService {
     return this.socket;
   }
 
-  requestQR(userType: 'admin' | 'teacher' = 'teacher'): Promise<{
+  requestQR(userType: 'admin' | 'teacher' = 'teacher', companyId?: string): Promise<{
     sessionId: string;
     qrCode: string;
   }> {
@@ -56,7 +56,7 @@ class WebSocketService {
         return;
       }
 
-      this.socket.emit('request-qr', { userType });
+      this.socket.emit('request-qr', { userType, companyId });
 
       this.socket.once('qr-generated', (data) => {
         resolve(data);
