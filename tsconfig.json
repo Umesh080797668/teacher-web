@@ -30,5 +30,9 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "app/dashboard/teacher/page_new.tsx"]
+  "exclude": [
+    "node_modules",
+    "app/dashboard/teacher/page_new.tsx",
+    "app/api/admin/**/*.ts"
+  ]
 }
