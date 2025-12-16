@@ -365,6 +365,18 @@ export default function AdminDashboardPage() {
                 <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10">
                   <button
                     onClick={() => {
+                      router.push('/dashboard/admin/unified');
+                      setShowUserMenu(false);
+                    }}
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                  >
+                    <svg className="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                    Unified Dashboard 🎯
+                  </button>
+                  <button
+                    onClick={() => {
                       router.push('/dashboard/admin/settings');
                       setShowUserMenu(false);
                     }}
@@ -467,6 +479,36 @@ export default function AdminDashboardPage() {
                 </div>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{teacherSessions.length}</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Active Sessions</p>
+              </div>
+            </div>
+
+            {/* Unified Dashboard Highlight */}
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <span className="text-3xl">🎯</span>
+                    <h2 className="text-2xl font-bold">Unified Teacher Management</h2>
+                  </div>
+                  <p className="text-indigo-100 mb-4">
+                    Manage multiple teachers easily in one view! Perfect for handling 3 teachers and 3 classes simultaneously.
+                  </p>
+                  <ul className="space-y-1 text-sm text-indigo-100 mb-4">
+                    <li>✓ See all active teachers at once</li>
+                    <li>✓ Quick attendance marking for all students</li>
+                    <li>✓ Real-time updates every 3 seconds</li>
+                    <li>✓ Grid or list view for easy management</li>
+                  </ul>
+                  <button
+                    onClick={() => router.push('/dashboard/admin/unified')}
+                    className="px-6 py-3 bg-white text-indigo-600 rounded-lg hover:bg-indigo-50 transition font-semibold text-lg shadow-md"
+                  >
+                    🚀 Open Unified Dashboard
+                  </button>
+                </div>
+                <div className="hidden lg:block text-8xl opacity-20">
+                  👨‍🏫👨‍🏫👨‍🏫
+                </div>
               </div>
             </div>
 

@@ -105,6 +105,8 @@ export const sessionApi = {
     api.get(`/api/web-session/teacher-data/${sessionId}`),
   getActiveTeachers: (companyId: string) =>
     api.get(`/api/admin/active-teachers/${companyId}`),
+  getTeacherDataBySession: (sessionId: string) =>
+    api.get(`/api/admin/teacher-data/${sessionId}`),
 };
 
 // Admin API
