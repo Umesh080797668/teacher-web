@@ -1,0 +1,107 @@
+import { useState, useEffect, useCallback } from 'react';
+
+export interface AdminPreferences {
+  autoRefresh: boolean;
+  refreshInterval: number; // in seconds
+  darkMode: boolean;
+  notifications: boolean;
+  sessionTimeout: number; // in minutes, -1 for never
+}
+
+const DEFAULT_PREFERENCES: AdminPreferences = {
+  autoRefresh: true,
+  refreshInterval: 3,
+  darkMode: false,
+  notifications: true,
+  sessionTimeout: 30,
+};
+
+const STORAGE_KEY = 'admin_preferences';
+
+export function useAdminPreferences() {
+  const [preferences, setPreferencesState] = useState<AdminPreferences>(DEFAULT_PREFERENCES);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load preferences from localStorage on mount
+  useEffect(() => {
+    const loadPreferences = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          setPreferencesState({ ...DEFAULT_PREFERENCES, ...parsed });
+        }
+      } catch (e) {
+        console.error('Error loading preferences:', e);
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+
+    loadPreferences();
+  }, []);
+
+  // Apply dark mode whenever it changes
+  useEffect(() => {
+    if (isLoaded) {
+      if (preferences.darkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, [preferences.darkMode, isLoaded]);
+
+  // Save preferences to localStorage
+  const savePreferences = useCallback((newPreferences: Partial<AdminPreferences>) => {
+    setPreferencesState(prev => {
+      const updated = { ...prev, ...newPreferences };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Error saving preferences:', e);
+      }
+      return updated;
+    });
+  }, []);
+
+  // Update a single preference
+  const updatePreference = useCallback(<K extends keyof AdminPreferences>(
+    key: K,
+    value: AdminPreferences[K]
+  ) => {
+    savePreferences({ [key]: value });
+  }, [savePreferences]);
+
+  // Toggle boolean preferences
+  const togglePreference = useCallback((key: keyof Pick<AdminPreferences, 'autoRefresh' | 'darkMode' | 'notifications'>) => {
+    setPreferencesState(prev => {
+      const updated = { ...prev, [key]: !prev[key] };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.error('Error saving preferences:', e);
+      }
+      return updated;
+    });
+  }, []);
+
+  // Reset to defaults
+  const resetPreferences = useCallback(() => {
+    setPreferencesState(DEFAULT_PREFERENCES);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_PREFERENCES));
+    } catch (e) {
+      console.error('Error resetting preferences:', e);
+    }
+  }, []);
+
+  return {
+    preferences,
+    isLoaded,
+    savePreferences,
+    updatePreference,
+    togglePreference,
+    resetPreferences,
+  };
+}

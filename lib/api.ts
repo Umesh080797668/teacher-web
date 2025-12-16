@@ -105,8 +105,6 @@ export const sessionApi = {
     api.get(`/api/web-session/teacher-data/${sessionId}`),
   getActiveTeachers: (companyId: string) =>
     api.get(`/api/admin/active-teachers/${companyId}`),
-  getTeacherDataBySession: (sessionId: string) =>
-    api.get(`/api/admin/teacher-data/${sessionId}`),
 };
 
 // Admin API
@@ -118,6 +116,8 @@ export const adminApi = {
   getProfile: () => api.get('/api/admin/profile'),
   updateProfile: (data: { name?: string; companyName?: string }) => 
     api.put('/api/admin/profile', data),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    api.put('/api/admin/change-password', data),
 };
 
 export default api;

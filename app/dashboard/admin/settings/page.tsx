@@ -6,6 +6,8 @@ import { useAuthStore } from '@/lib/store';
 import { adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { AdminUser } from '@/lib/types';
+import { useSessionTimeout } from '@/lib/useSessionTimeout';
+import { useAdminPreferences } from '@/lib/useAdminPreferences';
 
 export default function AdminSettingsPage() {
   const router = useRouter();
@@ -18,13 +20,13 @@ export default function AdminSettingsPage() {
     companyName: '',
     email: '',
   });
-  const [preferences, setPreferences] = useState({
-    autoRefresh: true,
-    refreshInterval: 3,
-    darkMode: false,
-    notifications: true,
-    sessionTimeout: 30,
-  });
+  const { 
+    preferences, 
+    isLoaded: preferencesLoaded,
+    savePreferences, 
+    updatePreference, 
+    togglePreference 
+  } = useAdminPreferences();
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -33,13 +35,15 @@ export default function AdminSettingsPage() {
 
   const adminUser = user as AdminUser;
 
+  // Apply session timeout based on preferences
+  useSessionTimeout(preferences.sessionTimeout);
+
   useEffect(() => {
     if (!isAuthenticated || userType !== 'admin') {
       router.push('/login/admin');
       return;
     }
     loadProfile();
-    loadPreferences();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, userType, router]);
 
@@ -58,17 +62,6 @@ export default function AdminSettingsPage() {
       toast.error('Failed to load profile');
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadPreferences = () => {
-    const saved = localStorage.getItem('admin_preferences');
-    if (saved) {
-      try {
-        setPreferences(JSON.parse(saved));
-      } catch (e) {
-        console.error('Error loading preferences:', e);
-      }
     }
   };
 
@@ -102,15 +95,8 @@ export default function AdminSettingsPage() {
   };
 
   const handleSavePreferences = () => {
-    localStorage.setItem('admin_preferences', JSON.stringify(preferences));
+    // Preferences are already saved via the hook, just show confirmation
     toast.success('Preferences saved successfully');
-    
-    // Apply dark mode immediately
-    if (preferences.darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
   };
 
   const handleChangePassword = async () => {
@@ -131,7 +117,11 @@ export default function AdminSettingsPage() {
 
     setIsSaving(true);
     try {
-      // TODO: Implement password change API
+      await adminApi.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      
       toast.success('Password changed successfully');
       setPasswordData({
         currentPassword: '',
@@ -140,7 +130,10 @@ export default function AdminSettingsPage() {
       });
     } catch (error) {
       console.error('Error changing password:', error);
-      toast.error('Failed to change password');
+      const errorMessage = error && typeof error === 'object' && 'response' in error 
+        ? (error as { response?: { data?: { error?: string } } }).response?.data?.error 
+        : undefined;
+      toast.error(errorMessage || 'Failed to change password');
     } finally {
       setIsSaving(false);
     }
@@ -338,7 +331,7 @@ export default function AdminSettingsPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400">Automatically refresh teacher sessions</p>
                 </div>
                 <button
-                  onClick={() => setPreferences({ ...preferences, autoRefresh: !preferences.autoRefresh })}
+                  onClick={() => togglePreference('autoRefresh')}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
                     preferences.autoRefresh ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
@@ -358,7 +351,7 @@ export default function AdminSettingsPage() {
                   </label>
                   <select
                     value={preferences.refreshInterval}
-                    onChange={(e) => setPreferences({ ...preferences, refreshInterval: parseInt(e.target.value) })}
+                    onChange={(e) => updatePreference('refreshInterval', parseInt(e.target.value))}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   >
                     <option value={1}>1 second</option>
@@ -367,6 +360,9 @@ export default function AdminSettingsPage() {
                     <option value={10}>10 seconds</option>
                     <option value={30}>30 seconds</option>
                   </select>
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Lower intervals provide real-time updates but use more resources
+                  </p>
                 </div>
               )}
 
@@ -376,7 +372,7 @@ export default function AdminSettingsPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400">Use dark theme for the dashboard</p>
                 </div>
                 <button
-                  onClick={() => setPreferences({ ...preferences, darkMode: !preferences.darkMode })}
+                  onClick={() => togglePreference('darkMode')}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
                     preferences.darkMode ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
@@ -395,7 +391,7 @@ export default function AdminSettingsPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400">Show notifications for teacher logins</p>
                 </div>
                 <button
-                  onClick={() => setPreferences({ ...preferences, notifications: !preferences.notifications })}
+                  onClick={() => togglePreference('notifications')}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
                     preferences.notifications ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
@@ -410,19 +406,33 @@ export default function AdminSettingsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Session Timeout (minutes)
+                  Session Timeout
                 </label>
                 <select
                   value={preferences.sessionTimeout}
-                  onChange={(e) => setPreferences({ ...preferences, sessionTimeout: parseInt(e.target.value) })}
+                  onChange={(e) => updatePreference('sessionTimeout', parseInt(e.target.value))}
                   className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value={15}>15 minutes</option>
                   <option value={30}>30 minutes</option>
                   <option value={60}>1 hour</option>
                   <option value={120}>2 hours</option>
-                  <option value={-1}>Never</option>
+                  <option value={-1}>Never (not recommended)</option>
                 </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Automatically log out after this period of inactivity for security
+                </p>
+              </div>
+
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2">💡 Preferences Info</h3>
+                <ul className="space-y-1 text-sm text-blue-800 dark:text-blue-400">
+                  <li>• Auto-refresh keeps teacher data up-to-date in real-time</li>
+                  <li>• Dark mode reduces eye strain in low light</li>
+                  <li>• Notifications alert you of teacher logins</li>
+                  <li>• Session timeout enhances security</li>
+                  <li>• All preferences are saved locally</li>
+                </ul>
               </div>
 
               <div className="pt-4">
@@ -443,6 +453,16 @@ export default function AdminSettingsPage() {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Change Password</h2>
               
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4 mb-6">
+                <h3 className="text-sm font-semibold text-indigo-900 dark:text-indigo-300 mb-2">🔐 Password Requirements</h3>
+                <ul className="space-y-1 text-sm text-indigo-800 dark:text-indigo-400">
+                  <li>• Minimum 6 characters long</li>
+                  <li>• Use a strong, unique password</li>
+                  <li>• Don't share your password with anyone</li>
+                  <li>• Change your password regularly</li>
+                </ul>
+              </div>
+              
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -452,6 +472,7 @@ export default function AdminSettingsPage() {
                     type="password"
                     value={passwordData.currentPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                    placeholder="Enter your current password"
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
                 </div>
@@ -464,8 +485,14 @@ export default function AdminSettingsPage() {
                     type="password"
                     value={passwordData.newPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                    placeholder="Enter new password (min 6 characters)"
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
+                  {passwordData.newPassword && passwordData.newPassword.length < 6 && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      Password must be at least 6 characters
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -476,15 +503,21 @@ export default function AdminSettingsPage() {
                     type="password"
                     value={passwordData.confirmPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                    placeholder="Confirm your new password"
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                   />
+                  {passwordData.confirmPassword && passwordData.newPassword !== passwordData.confirmPassword && (
+                    <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+                      Passwords do not match
+                    </p>
+                  )}
                 </div>
 
                 <div className="pt-4">
                   <button
                     onClick={handleChangePassword}
-                    disabled={isSaving}
-                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50"
+                    disabled={isSaving || !passwordData.currentPassword || !passwordData.newPassword || passwordData.newPassword !== passwordData.confirmPassword}
+                    className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSaving ? 'Changing...' : 'Change Password'}
                   </button>

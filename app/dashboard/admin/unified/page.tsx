@@ -7,6 +7,7 @@ import { useAuthStore } from '@/lib/store';
 import { teachersApi, sessionApi, classesApi, studentsApi, attendanceApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Teacher, AdminUser, ActiveTeacherData, Class, Student, Attendance } from '@/lib/types';
+import { useAdminPreferences } from '@/lib/useAdminPreferences';
 
 interface UnifiedTeacherData extends ActiveTeacherData {
   classes: Class[];
@@ -18,6 +19,7 @@ interface UnifiedTeacherData extends ActiveTeacherData {
 export default function UnifiedDashboard() {
   const router = useRouter();
   const { user, userType, isAuthenticated, logout } = useAuthStore();
+  const { preferences } = useAdminPreferences();
   const [teachers, setTeachers] = useState<UnifiedTeacherData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [qrCodeData, setQrCodeData] = useState<string>('');
@@ -37,10 +39,12 @@ export default function UnifiedDashboard() {
     }
     loadActiveTeachers();
     
-    // Start polling
-    pollingRef.current = setInterval(() => {
-      loadActiveTeachers();
-    }, 3000);
+    // Start polling based on preferences
+    if (preferences.autoRefresh) {
+      pollingRef.current = setInterval(() => {
+        loadActiveTeachers();
+      }, preferences.refreshInterval * 1000);
+    }
 
     return () => {
       if (pollingRef.current) {
@@ -51,7 +55,7 @@ export default function UnifiedDashboard() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, userType, router]);
+  }, [isAuthenticated, userType, router, preferences.autoRefresh, preferences.refreshInterval]);
 
   const loadActiveTeachers = async () => {
     if (!companyId) return;
