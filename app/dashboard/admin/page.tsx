@@ -56,7 +56,9 @@ export default function AdminDashboardPage() {
       return;
     }
     
+    console.log('=== LOAD DATA START ===');
     console.log('loadData: Starting data load for companyId:', companyId);
+    console.log('loadData: Timestamp:', new Date().toISOString());
     setIsLoading(true);
     try {
       console.log('loadData: Fetching teachers and sessions...');
@@ -65,8 +67,50 @@ export default function AdminDashboardPage() {
         sessionApi.getTeacherSessions(companyId),
       ]);
 
-      console.log('loadData: Teachers response:', teachersRes.data);
+      // Decode and log backend debug information from Teachers API
+      const teachersDebugHeader = teachersRes.headers?.['x-debug-log'];
+      if (teachersDebugHeader) {
+        try {
+          const debugLog = atob(teachersDebugHeader);
+          console.log('=== BACKEND DEBUG LOG (Teachers API) ===');
+          console.log(debugLog);
+          console.log('=== END BACKEND DEBUG LOG ===');
+        } catch (e) {
+          console.log('Could not decode teachers backend debug log:', e);
+        }
+      }
+
+      // Decode and log backend debug information from Sessions API
+      const sessionsDebugHeader = sessionsRes.headers?.['x-debug-log'];
+      if (sessionsDebugHeader) {
+        try {
+          const debugLog = atob(sessionsDebugHeader);
+          console.log('=== BACKEND DEBUG LOG (Sessions API) ===');
+          console.log(debugLog);
+          console.log('=== END BACKEND DEBUG LOG ===');
+        } catch (e) {
+          console.log('Could not decode sessions backend debug log:', e);
+        }
+      }
+
+      console.log('loadData: Teachers response status:', teachersRes.status);
+      console.log('loadData: Teachers response data:', teachersRes.data);
+      console.log('loadData: Teachers count:', teachersRes.data?.length || 0);
+      
+      if (teachersRes.data && teachersRes.data.length > 0) {
+        console.log('loadData: Teacher details:', teachersRes.data.map((t: Teacher) => ({
+          teacherId: t.teacherId,
+          name: t.name,
+          email: t.email,
+          companyId: t.companyId,
+          _id: t._id
+        })));
+      } else {
+        console.warn('loadData: No teachers returned from API');
+      }
+      
       console.log('loadData: Sessions response:', sessionsRes.data);
+      console.log('loadData: Sessions count:', sessionsRes.data?.length || 0);
 
       // Backend now filters by companyIds array, no need to filter on frontend
       setTeachers(teachersRes.data);
@@ -77,13 +121,20 @@ export default function AdminDashboardPage() {
       // Show success toast only if we have new active sessions
       const activeSessions = sessions.filter((s: TeacherSession) => s.isActive);
       console.log('loadData: Active sessions:', activeSessions);
+      console.log('loadData: Active sessions count:', activeSessions.length);
 
       if (activeSessions.length > 0 && qrCheckIntervalRef.current) {
         // Only show toast if we were polling for QR (meaning a new login just happened)
         toast.success('Teacher logged in successfully!');
       }
+      
+      console.log('=== LOAD DATA END ===');
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('❌ Error loading data:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
       toast.error('Failed to load data');
     } finally {
       setIsLoading(false);
