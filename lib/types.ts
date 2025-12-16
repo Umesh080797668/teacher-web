@@ -85,6 +85,12 @@ export interface TeacherSession {
   loginTime: string;
   lastActivity: string;
   isActive: boolean;
+  userId?: {
+    _id: string;
+    name: string;
+    email: string;
+    teacherId: string;
+  };
 }
 
 export interface ActiveTeacherData {

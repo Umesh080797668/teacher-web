@@ -599,59 +599,66 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teacherSessions.map((session) => (
-                <div
-                  key={session._id}
-                  className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center">
-                      <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
-                        <span className="text-green-600 dark:text-green-400 font-semibold">
-                          {session.teacherName.charAt(0).toUpperCase()}
-                        </span>
+              {teacherSessions.map((session) => {
+                // Safely handle missing data
+                const teacherName = session.teacherName || session.userId?.name || 'Unknown Teacher';
+                const teacherEmail = session.teacherEmail || session.userId?.email || 'No email';
+                const teacherInitial = teacherName.charAt(0).toUpperCase();
+                
+                return (
+                  <div
+                    key={session._id}
+                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-green-600 dark:text-green-400 font-semibold">
+                            {teacherInitial}
+                          </span>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{teacherName}</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{teacherEmail}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{session.teacherName}</h3>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{session.teacherEmail}</p>
-                      </div>
+                      <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 text-xs font-semibold rounded-full">
+                        Active
+                      </span>
                     </div>
-                    <span className="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 text-xs font-semibold rounded-full">
-                      Active
-                    </span>
-                  </div>
 
-                  <div className="space-y-2 text-sm mb-4">
-                    <div className="flex items-center text-gray-600 dark:text-gray-400">
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Login: {new Date(session.loginTime).toLocaleString()}
-                    </div>
-                    <div className="flex items-center text-gray-600 dark:text-gray-400">
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                      </svg>
-                      Last Activity: {new Date(session.lastActivity).toLocaleString()}
-                    </div>
-                    {session.deviceInfo && (
+                    <div className="space-y-2 text-sm mb-4">
                       <div className="flex items-center text-gray-600 dark:text-gray-400">
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        {session.deviceInfo}
+                        Login: {session.loginTime ? new Date(session.loginTime).toLocaleString() : 'N/A'}
                       </div>
-                    )}
-                  </div>
+                      <div className="flex items-center text-gray-600 dark:text-gray-400">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Last Activity: {session.lastActivity ? new Date(session.lastActivity).toLocaleString() : 'N/A'}
+                      </div>
+                      {session.deviceInfo && (
+                        <div className="flex items-center text-gray-600 dark:text-gray-400">
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          {session.deviceInfo}
+                        </div>
+                      )}
+                    </div>
 
-                  <button
-                    onClick={() => handleLogoutTeacherSession(session.sessionId, session.teacherName)}
-                    className="w-full px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition font-medium"
-                  >
-                    Logout Session
-                  </button>
-                </div>
-              ))}
+                    <button
+                      onClick={() => handleLogoutTeacherSession(session.sessionId, teacherName)}
+                      className="w-full px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition font-medium"
+                    >
+                      Logout Session
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             {teacherSessions.length === 0 && (
