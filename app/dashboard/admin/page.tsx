@@ -6,15 +6,18 @@ import Image from 'next/image';
 import { useAuthStore } from '@/lib/store';
 import { teachersApi, sessionApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import type { Teacher, AdminUser, TeacherSession } from '@/lib/types';
+import type { Teacher, AdminUser, TeacherSession, ActiveTeacherData, TeacherDetailedData } from '@/lib/types';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, userType, isAuthenticated, logout } = useAuthStore();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teacherSessions, setTeacherSessions] = useState<TeacherSession[]>([]);
+  const [activeTeachers, setActiveTeachers] = useState<ActiveTeacherData[]>([]);
+  const [selectedTeacher, setSelectedTeacher] = useState<ActiveTeacherData | null>(null);
+  const [teacherDetails, setTeacherDetails] = useState<TeacherDetailedData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'teachers' | 'sessions' | 'qr-login'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'teachers' | 'sessions' | 'qr-login' | 'manage-active'>('overview');
   const [showTeacherModal, setShowTeacherModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [qrCodeData, setQrCodeData] = useState<string>('');
@@ -25,6 +28,7 @@ export default function AdminDashboardPage() {
     password: '',
   });
   const qrCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const activeTeachersPollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const adminUser = user as AdminUser;
   const companyId = adminUser?._id;
@@ -161,6 +165,7 @@ export default function AdminDashboardPage() {
       await sessionApi.logoutTeacherSession(sessionId);
       toast.success(`${teacherName} logged out successfully`);
       loadData();
+      loadActiveTeachers(); // Refresh active teachers list
     } catch (error) {
       console.error('Error logging out teacher:', error);
       const errorMessage = error && typeof error === 'object' && 'response' in error 
@@ -168,6 +173,59 @@ export default function AdminDashboardPage() {
         : undefined;
       toast.error(errorMessage || 'Failed to logout teacher');
     }
+  };
+
+  // Load active teachers (for manage-active tab)
+  const loadActiveTeachers = async () => {
+    if (!companyId) return;
+    
+    try {
+      const response = await sessionApi.getActiveTeachers(companyId);
+      setActiveTeachers(response.data.teachers || []);
+    } catch (error) {
+      console.error('Error loading active teachers:', error);
+    }
+  };
+
+  // Start polling for active teachers when on manage-active tab
+  useEffect(() => {
+    if (activeTab === 'manage-active' && companyId) {
+      // Initial load
+      loadActiveTeachers();
+      
+      // Start polling every 3 seconds
+      activeTeachersPollingRef.current = setInterval(() => {
+        loadActiveTeachers();
+      }, 3000);
+    } else {
+      // Clear polling when leaving tab
+      if (activeTeachersPollingRef.current) {
+        clearInterval(activeTeachersPollingRef.current);
+        activeTeachersPollingRef.current = null;
+      }
+    }
+    
+    return () => {
+      if (activeTeachersPollingRef.current) {
+        clearInterval(activeTeachersPollingRef.current);
+      }
+    };
+  }, [activeTab, companyId]);
+
+  // Load detailed teacher data
+  const loadTeacherDetails = async (sessionId: string) => {
+    try {
+      const response = await sessionApi.getTeacherData(sessionId);
+      setTeacherDetails(response.data);
+    } catch (error) {
+      console.error('Error loading teacher details:', error);
+      toast.error('Failed to load teacher details');
+    }
+  };
+
+  const handleViewTeacher = async (teacher: ActiveTeacherData) => {
+    setSelectedTeacher(teacher);
+    await loadTeacherDetails(teacher.sessionId);
   };
 
   const handleLogout = () => {
@@ -257,17 +315,18 @@ export default function AdminDashboardPage() {
       {/* Tabs */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8" aria-label="Tabs">
+          <nav className="flex space-x-8 overflow-x-auto" aria-label="Tabs">
             {[
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'teachers', name: 'Company Teachers', icon: '👥' },
               { id: 'sessions', name: 'Active Sessions', icon: '🔌' },
+              { id: 'manage-active', name: 'Manage Active Teachers', icon: '🎮' },
               { id: 'qr-login', name: 'QR Login', icon: '📱' },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'overview' | 'teachers' | 'sessions' | 'qr-login')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
+                onClick={() => setActiveTab(tab.id as 'overview' | 'teachers' | 'sessions' | 'qr-login' | 'manage-active')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
@@ -610,7 +669,295 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
+
+        {/* Manage Active Teachers Tab */}
+        {activeTab === 'manage-active' && (
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Active Teachers</h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    Manage multiple teacher sessions in real-time • Auto-refreshing every 3 seconds
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2 text-green-600 dark:text-green-400">
+                  <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium">Live</span>
+                </div>
+              </div>
+
+              {activeTeachers.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">👨‍🏫</div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Active Teachers</h3>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">
+                    No teachers are currently logged in via the mobile app
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('qr-login')}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
+                  >
+                    Generate QR Code
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {activeTeachers.map((teacher) => (
+                    <div
+                      key={teacher.sessionId}
+                      className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl p-6 hover:shadow-lg transition-all duration-200"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                            {teacher.teacher.name}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{teacher.teacher.email}</p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            ID: {teacher.teacher.teacherId}
+                          </p>
+                        </div>
+                        <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
+                          <span className="text-2xl">👨‍🏫</span>
+                        </div>
+                      </div>
+
+                      {/* Statistics */}
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3">
+                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            {teacher.stats.classes}
+                          </div>
+                          <div className="text-xs text-blue-600 dark:text-blue-400">Classes</div>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3">
+                          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                            {teacher.stats.students}
+                          </div>
+                          <div className="text-xs text-purple-600 dark:text-purple-400">Students</div>
+                        </div>
+                        <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3">
+                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                            {teacher.stats.todayPresent}
+                          </div>
+                          <div className="text-xs text-green-600 dark:text-green-400">Present Today</div>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-3">
+                          <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                            {teacher.stats.todayAbsent}
+                          </div>
+                          <div className="text-xs text-red-600 dark:text-red-400">Absent Today</div>
+                        </div>
+                      </div>
+
+                      {/* Session Info */}
+                      <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-3 mb-4">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Connected:</div>
+                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                          {new Date(teacher.connectedAt).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Device:</div>
+                        <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                          {teacher.deviceId || 'Mobile App'}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleViewTeacher(teacher)}
+                          className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
+                        >
+                          📊 View Details
+                        </button>
+                        <button
+                          onClick={() => handleLogoutTeacherSession(teacher.sessionId, teacher.teacher.name)}
+                          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium"
+                          title="Logout Teacher"
+                        >
+                          🚪
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Teacher Details Modal */}
+      {selectedTeacher && teacherDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto my-8">
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {teacherDetails.teacher.name}
+                </h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{teacherDetails.teacher.email}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setSelectedTeacher(null);
+                  setTeacherDetails(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Statistics Overview */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 text-center">
+                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                    {teacherDetails.statistics.totalClasses}
+                  </div>
+                  <div className="text-sm text-blue-600 dark:text-blue-400 mt-1">Total Classes</div>
+                </div>
+                <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-4 text-center">
+                  <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                    {teacherDetails.statistics.totalStudents}
+                  </div>
+                  <div className="text-sm text-purple-600 dark:text-purple-400 mt-1">Total Students</div>
+                </div>
+                <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-4 text-center">
+                  <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                    {teacherDetails.statistics.todayPresent}
+                  </div>
+                  <div className="text-sm text-green-600 dark:text-green-400 mt-1">Present Today</div>
+                </div>
+                <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-4 text-center">
+                  <div className="text-3xl font-bold text-red-600 dark:text-red-400">
+                    {teacherDetails.statistics.todayAbsent}
+                  </div>
+                  <div className="text-sm text-red-600 dark:text-red-400 mt-1">Absent Today</div>
+                </div>
+              </div>
+
+              {/* Classes */}
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">📚 Classes</h4>
+                {teacherDetails.classes.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">No classes yet</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {teacherDetails.classes.map((cls) => (
+                      <div
+                        key={cls._id}
+                        className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white">{cls.name}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Created: {new Date(cls.createdAt || '').toLocaleDateString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Students */}
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">👨‍🎓 Students</h4>
+                {teacherDetails.students.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">No students yet</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Email</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Student ID</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        {teacherDetails.students.slice(0, 10).map((student) => (
+                          <tr key={student._id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">{student.name}</td>
+                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{student.email || '-'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{student.studentId}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {teacherDetails.students.length > 10 && (
+                      <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-3">
+                        Showing 10 of {teacherDetails.students.length} students
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Attendance */}
+              <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-6">
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">📋 Recent Attendance (Last 30 Days)</h4>
+                {teacherDetails.recentAttendance.length === 0 ? (
+                  <p className="text-gray-500 dark:text-gray-400 text-center py-4">No attendance records yet</p>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {teacherDetails.recentAttendance.slice(0, 20).map((record) => (
+                      <div
+                        key={record._id}
+                        className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
+                      >
+                        <div className="flex-1">
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">
+                            {typeof record.studentId === 'object' && record.studentId !== null && 'name' in record.studentId
+                              ? (record.studentId as { name: string }).name
+                              : 'Student'}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(record.date).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            record.status === 'present'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                              : record.status === 'absent'
+                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                          }`}
+                        >
+                          {record.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => handleLogoutTeacherSession(selectedTeacher.sessionId, selectedTeacher.teacher.name)}
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+                >
+                  🚪 Logout This Teacher
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedTeacher(null);
+                    setTeacherDetails(null);
+                  }}
+                  className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add Teacher Modal */}
       {showTeacherModal && (

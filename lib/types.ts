@@ -87,6 +87,53 @@ export interface TeacherSession {
   isActive: boolean;
 }
 
+export interface ActiveTeacherData {
+  sessionId: string;
+  deviceId: string;
+  connectedAt: string;
+  teacher: {
+    _id: string;
+    name: string;
+    email: string;
+    teacherId: string;
+    phone?: string;
+  };
+  stats: {
+    classes: number;
+    students: number;
+    todayPresent: number;
+    todayAbsent: number;
+    todayTotal: number;
+  };
+}
+
+export interface TeacherDetailedData {
+  session: {
+    sessionId: string;
+    deviceId: string;
+    createdAt: string;
+    companyId: string;
+  };
+  teacher: {
+    _id: string;
+    name: string;
+    email: string;
+    teacherId: string;
+    phone?: string;
+    status: string;
+  };
+  statistics: {
+    totalClasses: number;
+    totalStudents: number;
+    todayPresent: number;
+    todayAbsent: number;
+    attendanceMarked: boolean;
+  };
+  classes: Class[];
+  students: Student[];
+  recentAttendance: Attendance[];
+}
+
 export interface AuthResponse {
   success: boolean;
   session?: WebSession;

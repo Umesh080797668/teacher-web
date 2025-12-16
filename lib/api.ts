@@ -101,6 +101,10 @@ export const sessionApi = {
     api.get(`/api/web-session/teacher-sessions/${companyId}`),
   logoutTeacherSession: (sessionId: string) => 
     api.post('/api/web-session/logout-teacher', { sessionId }),
+  getTeacherData: (sessionId: string) =>
+    api.get(`/api/web-session/teacher-data/${sessionId}`),
+  getActiveTeachers: (companyId: string) =>
+    api.get(`/api/admin/active-teachers/${companyId}`),
 };
 
 // Admin API
