@@ -124,7 +124,14 @@ export default function AdminDashboardPage() {
   };
 
   const handleGenerateQR = async () => {
+    if (!companyId) {
+      console.error('Company ID is missing in handleGenerateQR');
+      toast.error('System error: Company ID missing. Please reload.');
+      return;
+    }
+
     try {
+      console.log('Generating QR for companyId:', companyId);
       const response = await sessionApi.generateQR(companyId);
       const { sessionId, qrCode } = response.data;
       
