@@ -18,7 +18,7 @@ interface UnifiedTeacherData extends ActiveTeacherData {
 
 export default function UnifiedDashboard() {
   const router = useRouter();
-  const { user, userType, isAuthenticated, logout } = useAuthStore();
+  const { user, userType, isAuthenticated, logout, isHydrated } = useAuthStore();
   const { preferences } = useAdminPreferences();
   const [teachers, setTeachers] = useState<UnifiedTeacherData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,6 +33,8 @@ export default function UnifiedDashboard() {
   const companyId = adminUser?._id;
 
   useEffect(() => {
+    if (!isHydrated) return; // Wait for hydration
+    
     if (!isAuthenticated || userType !== 'admin') {
       router.push('/login/admin');
       return;
@@ -55,7 +57,7 @@ export default function UnifiedDashboard() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, userType, router, preferences.autoRefresh, preferences.refreshInterval]);
+  }, [isAuthenticated, userType, router, preferences.autoRefresh, preferences.refreshInterval, isHydrated]);
 
   const loadActiveTeachers = async () => {
     if (!companyId) return;
@@ -196,6 +198,17 @@ export default function UnifiedDashboard() {
     t.teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.teacher.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Initializing...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
