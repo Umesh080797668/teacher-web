@@ -131,33 +131,33 @@ export default function ReportsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading reports...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading reports...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => router.back()}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Reports</h1>
-                <p className="text-sm text-gray-600">View attendance reports and analytics</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Reports</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">View attendance reports and analytics</p>
               </div>
             </div>
           </div>
@@ -165,7 +165,7 @@ export default function ReportsPage() {
       </header>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex space-x-8" aria-label="Tabs">
             {[
@@ -178,8 +178,8 @@ export default function ReportsPage() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
                   activeTab === tab.id
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'
                 }`}
               >
                 <span className="mr-2">{tab.icon}</span>
@@ -194,60 +194,60 @@ export default function ReportsPage() {
         {/* Attendance Summary Tab */}
         {activeTab === 'summary' && (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Overall Attendance Summary</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Overall Attendance Summary</h2>
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Total Students</p>
-                    <p className="text-3xl font-bold text-blue-600 mt-2">{summary.totalStudents}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
+                    <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{summary.totalStudents}</p>
                   </div>
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-blue-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Present Today</p>
-                    <p className="text-3xl font-bold text-green-600 mt-2">{summary.presentToday}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Present Today</p>
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{summary.presentToday}</p>
                   </div>
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Absent Today</p>
-                    <p className="text-3xl font-bold text-red-600 mt-2">{summary.absentToday}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Absent Today</p>
+                    <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{summary.absentToday}</p>
                   </div>
-                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-red-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-gray-600">Late Today</p>
-                    <p className="text-3xl font-bold text-orange-600 mt-2">{summary.lateToday}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Late Today</p>
+                    <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">{summary.lateToday}</p>
                   </div>
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-orange-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
@@ -257,42 +257,42 @@ export default function ReportsPage() {
 
             {/* Daily Attendance by Class */}
             <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Daily Attendance by Class</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Daily Attendance by Class</h3>
               <div className="space-y-4">
                 {dailyByClass.map((classData) => (
-                  <div key={classData.classId} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div key={classData.classId} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-lg font-semibold text-gray-900">{classData.className}</h4>
-                      <span className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-sm font-medium">
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{classData.className}</h4>
+                      <span className="px-3 py-1 bg-indigo-100 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-full text-sm font-medium">
                         {classData.totalStudents} Students
                       </span>
                     </div>
 
                     <div className="grid grid-cols-3 gap-4 mb-4">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">{classData.presentCount}</p>
-                        <p className="text-sm text-gray-600">Present</p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">{classData.presentCount}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Present</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-red-600">{classData.absentCount}</p>
-                        <p className="text-sm text-gray-600">Absent</p>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">{classData.absentCount}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Absent</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-orange-600">{classData.lateCount}</p>
-                        <p className="text-sm text-gray-600">Late</p>
+                        <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{classData.lateCount}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Late</p>
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Attendance Rate</span>
+                        <span className="text-gray-600 dark:text-gray-400">Attendance Rate</span>
                         <span className={`font-semibold ${
-                          classData.attendanceRate >= 75 ? 'text-green-600' : 'text-orange-600'
+                          classData.attendanceRate >= 75 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
                         }`}>
                           {classData.attendanceRate.toFixed(1)}%
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2">
                         <div
                           className={`h-2 rounded-full transition-all duration-500 ${
                             classData.attendanceRate >= 75 ? 'bg-green-500' : 'bg-orange-500'
@@ -312,12 +312,12 @@ export default function ReportsPage() {
         {activeTab === 'students' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Student Reports</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Student Reports</h2>
               <div className="flex items-center space-x-4">
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                 >
                   {monthNames.map((month, index) => (
                     <option key={index + 1} value={index + 1}>{month}</option>
@@ -326,7 +326,7 @@ export default function ReportsPage() {
                 <select
                   value={selectedYear}
                   onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
                 >
                   {Array.from({ length: 10 }, (_, i) => 2020 + i).map((year) => (
                     <option key={year} value={year}>{year}</option>
@@ -337,13 +337,13 @@ export default function ReportsPage() {
 
             <div className="space-y-4">
               {studentReports.map((report) => (
-                <div key={report.studentId} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <div key={report.studentId} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900">{report.studentName}</h4>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{report.studentName}</h4>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                       report.attendanceRate >= 75 
-                        ? 'bg-green-100 text-green-600'
-                        : 'bg-red-100 text-red-600'
+                        ? 'bg-green-100 dark:bg-slate-700 text-green-600 dark:text-green-400'
+                        : 'bg-red-100 dark:bg-slate-700 text-red-600 dark:text-red-400'
                     }`}>
                       {report.attendanceRate.toFixed(1)}%
                     </span>
@@ -351,17 +351,17 @@ export default function ReportsPage() {
 
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
-                      <span className="px-3 py-1 bg-green-100 text-green-600 rounded-lg text-sm font-medium">
+                      <span className="px-3 py-1 bg-green-100 dark:bg-slate-700 text-green-600 dark:text-green-400 rounded-lg text-sm font-medium">
                         Present: {report.presentCount}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="px-3 py-1 bg-red-100 text-red-600 rounded-lg text-sm font-medium">
+                      <span className="px-3 py-1 bg-red-100 dark:bg-slate-700 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium">
                         Absent: {report.absentCount}
                       </span>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-sm font-medium">
+                      <span className="px-3 py-1 bg-orange-100 dark:bg-slate-700 text-orange-600 dark:text-orange-400 rounded-lg text-sm font-medium">
                         Late: {report.lateCount}
                       </span>
                     </div>
@@ -376,52 +376,52 @@ export default function ReportsPage() {
         {activeTab === 'monthly' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900">Monthly Statistics by Class</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Monthly Statistics by Class</h2>
             </div>
 
             {dailyByClass.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-12 text-center">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-3xl">📊</span>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">No monthly statistics available</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No monthly statistics available</h3>
               </div>
             ) : (
               <div className="space-y-6">
                 {dailyByClass.map((classData) => (
-                  <div key={classData.classId} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <div key={classData.classId} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                     <div className="flex items-center justify-between mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900">{classData.className}</h3>
-                      <span className="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-sm font-medium">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{classData.className}</h3>
+                      <span className="px-3 py-1 bg-indigo-100 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-full text-sm font-medium">
                         {classData.totalStudents} Students
                       </span>
                     </div>
 
                     <div className="grid grid-cols-3 gap-6">
-                      <div className="text-center p-4 bg-green-50 rounded-lg">
-                        <p className="text-3xl font-bold text-green-600">{classData.presentCount}</p>
-                        <p className="text-sm text-gray-600 mt-2">Present</p>
+                      <div className="text-center p-4 bg-green-50 dark:bg-slate-700 rounded-lg">
+                        <p className="text-3xl font-bold text-green-600 dark:text-green-400">{classData.presentCount}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">Present</p>
                       </div>
-                      <div className="text-center p-4 bg-red-50 rounded-lg">
-                        <p className="text-3xl font-bold text-red-600">{classData.absentCount}</p>
-                        <p className="text-sm text-gray-600 mt-2">Absent</p>
+                      <div className="text-center p-4 bg-red-50 dark:bg-slate-700 rounded-lg">
+                        <p className="text-3xl font-bold text-red-600 dark:text-red-400">{classData.absentCount}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">Absent</p>
                       </div>
-                      <div className="text-center p-4 bg-orange-50 rounded-lg">
-                        <p className="text-3xl font-bold text-orange-600">{classData.lateCount}</p>
-                        <p className="text-sm text-gray-600 mt-2">Late</p>
+                      <div className="text-center p-4 bg-orange-50 dark:bg-slate-700 rounded-lg">
+                        <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">{classData.lateCount}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">Late</p>
                       </div>
                     </div>
 
                     <div className="mt-6">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600">Average Attendance Rate</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">Average Attendance Rate</span>
                         <span className={`font-semibold ${
-                          classData.attendanceRate >= 75 ? 'text-green-600' : 'text-orange-600'
+                          classData.attendanceRate >= 75 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
                         }`}>
                           {classData.attendanceRate.toFixed(1)}%
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3">
                         <div
                           className={`h-3 rounded-full transition-all duration-500 ${
                             classData.attendanceRate >= 75 ? 'bg-green-500' : 'bg-orange-500'

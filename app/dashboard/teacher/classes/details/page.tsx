@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/store';
 import { classesApi, studentsApi, attendanceApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Class, Student, Attendance, Teacher } from '@/lib/types';
+import Pagination from '@/lib/Pagination';
 
 function ClassDetailsContent() {
   const router = useRouter();
@@ -25,6 +26,10 @@ function ClassDetailsContent() {
     email: '',
     studentId: '',
   });
+
+  // Pagination state
+  const [studentsCurrentPage, setStudentsCurrentPage] = useState(1);
+  const STUDENTS_PER_PAGE = 10;
 
   const teacher = user as Teacher;
 
@@ -284,51 +289,57 @@ function ClassDetailsContent() {
 
           {students.length > 0 ? (
             <div className="space-y-3">
-              {students.map((student) => {
-                const attendanceRate = getStudentAttendanceRate(student._id);
-                
-                return (
-                  <div key={student._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition">
-                    <div className="flex items-center space-x-4 flex-1">
-                      <div className="w-12 h-12 bg-indigo-100 dark:bg-slate-600 rounded-full flex items-center justify-center">
-                        <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
-                          {student.name.charAt(0).toUpperCase()}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{student.name}</h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">{student.studentId}</p>
-                        {student.email && (
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Attendance</p>
-                        <div className="flex items-center space-x-2">
-                          <div className="w-24 bg-gray-200 dark:bg-slate-600 rounded-full h-2">
-                            <div
-                              className="bg-green-500 h-2 rounded-full"
-                              style={{ width: `${attendanceRate}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {attendanceRate.toFixed(0)}%
+              {(() => {
+                const startIndex = (studentsCurrentPage - 1) * STUDENTS_PER_PAGE;
+                const endIndex = startIndex + STUDENTS_PER_PAGE;
+                const paginatedStudents = students.slice(startIndex, endIndex);
+
+                return paginatedStudents.map((student) => {
+                  const attendanceRate = getStudentAttendanceRate(student._id);
+                  
+                  return (
+                    <div key={student._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className="w-12 h-12 bg-indigo-100 dark:bg-slate-600 rounded-full flex items-center justify-center">
+                          <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
+                            {student.name.charAt(0).toUpperCase()}
                           </span>
                         </div>
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{student.name}</h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">{student.studentId}</p>
+                          {student.email && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Attendance</p>
+                          <div className="flex items-center space-x-2">
+                            <div className="w-24 bg-gray-200 dark:bg-slate-600 rounded-full h-2">
+                              <div
+                                className="bg-green-500 h-2 rounded-full"
+                                style={{ width: `${attendanceRate}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {attendanceRate.toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
                       </div>
+                      <button
+                        onClick={() => handleDeleteStudent(student._id, student.name)}
+                        className="ml-4 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-600 rounded-lg transition"
+                        title="Delete student"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
-                    <button
-                      onClick={() => handleDeleteStudent(student._id, student.name)}
-                      className="ml-4 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-600 rounded-lg transition"
-                      title="Delete student"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
           ) : (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
@@ -337,6 +348,18 @@ function ClassDetailsContent() {
               </svg>
               <p className="text-lg font-medium text-gray-900 dark:text-white">No students in this class yet</p>
               <p className="text-sm mt-2 text-gray-500 dark:text-gray-400">Click "Add Student" to add students to this class</p>
+            </div>
+          )}
+          
+          {/* Pagination for Students */}
+          {students.length > STUDENTS_PER_PAGE && (
+            <div className="mt-6">
+              <Pagination
+                currentPage={studentsCurrentPage}
+                totalItems={students.length}
+                itemsPerPage={STUDENTS_PER_PAGE}
+                onPageChange={setStudentsCurrentPage}
+              />
             </div>
           )}
         </div>
