@@ -528,94 +528,43 @@ function TeacherCard({
 
       {/* Expanded Details */}
       {teacher.isExpanded && (
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900 space-y-4">
-          {/* Management Actions */}
-          <div className="grid grid-cols-2 gap-2">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
             <button
               onClick={() => window.open(`/dashboard/teacher/students?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium flex items-center justify-center gap-2"
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
             >
-              <span>👥</span>
-              <span>Add Student</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">👥</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Students</span>
             </button>
             <button
               onClick={() => window.open(`/dashboard/teacher/classes?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium flex items-center justify-center gap-2"
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
             >
-              <span>📚</span>
-              <span>Add Class</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📚</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Classes</span>
+            </button>
+            <button
+              onClick={() => window.open(`/dashboard/teacher/attendance?teacherId=${teacher.teacher.teacherId}`, '_blank')}
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
+            >
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📅</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Attendance</span>
             </button>
             <button
               onClick={() => window.open(`/dashboard/teacher/payments?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium flex items-center justify-center gap-2"
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
             >
-              <span>💰</span>
-              <span>Payments</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">💰</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Payments</span>
             </button>
             <button
               onClick={() => window.open(`/dashboard/teacher/reports?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium flex items-center justify-center gap-2"
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
             >
-              <span>📊</span>
-              <span>Reports</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📊</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Reports</span>
             </button>
-          </div>
-
-          {/* Students with Quick Attendance */}
-          <div>
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Today's Attendance</h4>
-            {teacher.students.length === 0 ? (
-              <p className="text-xs text-gray-500 dark:text-gray-400">No students yet</p>
-            ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {teacher.students.slice(0, 10).map((student) => {
-                  const attendance = teacher.todayAttendance.find(a => a.studentId === student._id);
-                  return (
-                    <div
-                      key={student._id}
-                      className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-2"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {student.name}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{student.studentId}</div>
-                      </div>
-                      {attendance ? (
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded ${
-                            attendance.status === 'present'
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                              : attendance.status === 'absent'
-                              ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                          }`}
-                        >
-                          {attendance.status}
-                        </span>
-                      ) : (
-                        <div className="flex space-x-1">
-                          <button
-                            onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'present')}
-                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                            title="Present"
-                          >
-                            ✓
-                          </button>
-                          <button
-                            onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'absent')}
-                            className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                            title="Absent"
-                          >
-                            ✗
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </div>
       )}
@@ -687,94 +636,42 @@ function TeacherListItem({
 
       {teacher.isExpanded && (
         <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
-          {/* Management Actions */}
-          <div className="grid grid-cols-4 gap-2 mb-4">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
             <button
               onClick={() => window.open(`/dashboard/teacher/students?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium flex items-center justify-center gap-2"
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
             >
-              <span>👥</span>
-              <span>Add Student</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">👥</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Students</span>
             </button>
             <button
               onClick={() => window.open(`/dashboard/teacher/classes?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium flex items-center justify-center gap-2"
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
             >
-              <span>📚</span>
-              <span>Add Class</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📚</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Classes</span>
+            </button>
+            <button
+              onClick={() => window.open(`/dashboard/teacher/attendance?teacherId=${teacher.teacher.teacherId}`, '_blank')}
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
+            >
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">�</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Attendance</span>
             </button>
             <button
               onClick={() => window.open(`/dashboard/teacher/payments?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium flex items-center justify-center gap-2"
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
             >
-              <span>💰</span>
-              <span>Payments</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">💰</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Payments</span>
             </button>
             <button
               onClick={() => window.open(`/dashboard/teacher/reports?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium flex items-center justify-center gap-2"
+              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
             >
-              <span>📊</span>
-              <span>Reports</span>
+              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📊</span>
+              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Reports</span>
             </button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Classes */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Classes</h4>
-              <div className="space-y-1">
-                {teacher.classes.map((cls) => (
-                  <div key={cls._id} className="px-3 py-2 bg-white dark:bg-gray-800 rounded-lg text-sm">
-                    {cls.name}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Students */}
-            <div>
-              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Students - Today's Attendance</h4>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {teacher.students.map((student) => {
-                  const attendance = teacher.todayAttendance.find(a => a.studentId === student._id);
-                  return (
-                    <div key={student._id} className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-lg p-2">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">{student.name}</div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">{student.studentId}</div>
-                      </div>
-                      {attendance ? (
-                        <span
-                          className={`px-2 py-1 text-xs font-medium rounded ${
-                            attendance.status === 'present'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {attendance.status}
-                        </span>
-                      ) : (
-                        <div className="flex space-x-1">
-                          <button
-                            onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'present')}
-                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                          >
-                            ✓ Present
-                          </button>
-                          <button
-                            onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'absent')}
-                            className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                          >
-                            ✗ Absent
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
       )}
