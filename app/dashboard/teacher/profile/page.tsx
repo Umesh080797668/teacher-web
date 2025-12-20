@@ -163,7 +163,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -228,7 +228,7 @@ export default function ProfilePage() {
                 <div className="absolute bottom-0 right-1/2 translate-x-[calc(50%+2rem)] translate-y-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-10 min-w-[180px]">
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center text-sm text-gray-700"
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center text-sm text-gray-700 dark:text-gray-300"
                   >
                     <svg className="w-5 h-5 mr-3 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -237,10 +237,10 @@ export default function ProfilePage() {
                   </button>
                   {profileImage && (
                     <>
-                      <div className="border-t border-gray-200"></div>
+                      <div className="border-t border-gray-200 dark:border-gray-600"></div>
                       <button
                         onClick={handleRemoveImage}
-                        className="w-full text-left px-4 py-3 hover:bg-red-50 flex items-center text-sm text-red-600"
+                        className="w-full text-left px-4 py-3 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center text-sm text-red-600 dark:text-red-400"
                       >
                         <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -249,10 +249,10 @@ export default function ProfilePage() {
                       </button>
                     </>
                   )}
-                  <div className="border-t border-gray-200"></div>
+                  <div className="border-t border-gray-200 dark:border-gray-600"></div>
                   <button
                     onClick={() => setShowImageOptions(false)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center text-sm text-gray-700"
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center text-sm text-gray-700 dark:text-gray-300"
                   >
                     <svg className="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
