@@ -8,10 +8,12 @@ import toast from 'react-hot-toast';
 import type { AdminUser } from '@/lib/types';
 import { useSessionTimeout } from '@/lib/useSessionTimeout';
 import { useAdminPreferences } from '@/lib/useAdminPreferences';
+import { useTheme } from '@/lib/ThemeContext';
 
 export default function AdminSettingsPage() {
   const router = useRouter();
   const { user, userType, isAuthenticated, updateUser, logout } = useAuthStore();
+  const { theme, toggleTheme } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<'profile' | 'company' | 'preferences' | 'security'>('profile');
@@ -372,14 +374,14 @@ export default function AdminSettingsPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400">Use dark theme for the dashboard</p>
                 </div>
                 <button
-                  onClick={() => togglePreference('darkMode')}
+                  onClick={toggleTheme}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
-                    preferences.darkMode ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'
+                    theme === 'dark' ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-                      preferences.darkMode ? 'translate-x-6' : 'translate-x-1'
+                      theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
                 </button>

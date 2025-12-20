@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react';
 export interface AdminPreferences {
   autoRefresh: boolean;
   refreshInterval: number; // in seconds
-  darkMode: boolean;
   notifications: boolean;
   sessionTimeout: number; // in minutes, -1 for never
 }
@@ -11,7 +10,6 @@ export interface AdminPreferences {
 const DEFAULT_PREFERENCES: AdminPreferences = {
   autoRefresh: true,
   refreshInterval: 3,
-  darkMode: false,
   notifications: true,
   sessionTimeout: 30,
 };
@@ -41,17 +39,6 @@ export function useAdminPreferences() {
     loadPreferences();
   }, []);
 
-  // Apply dark mode whenever it changes
-  useEffect(() => {
-    if (isLoaded) {
-      if (preferences.darkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    }
-  }, [preferences.darkMode, isLoaded]);
-
   // Save preferences to localStorage
   const savePreferences = useCallback((newPreferences: Partial<AdminPreferences>) => {
     setPreferencesState(prev => {
@@ -74,7 +61,7 @@ export function useAdminPreferences() {
   }, [savePreferences]);
 
   // Toggle boolean preferences
-  const togglePreference = useCallback((key: keyof Pick<AdminPreferences, 'autoRefresh' | 'darkMode' | 'notifications'>) => {
+  const togglePreference = useCallback((key: keyof Pick<AdminPreferences, 'autoRefresh' | 'notifications'>) => {
     setPreferencesState(prev => {
       const updated = { ...prev, [key]: !prev[key] };
       try {

@@ -7,11 +7,13 @@ import { useAuthStore } from '@/lib/store';
 import { teachersApi, sessionApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { io, Socket } from 'socket.io-client';
+import { useTheme } from '@/lib/ThemeContext';
 import type { Teacher, AdminUser, TeacherSession, ActiveTeacherData, TeacherDetailedData } from '@/lib/types';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
   const { user, userType, isAuthenticated, logout, isHydrated } = useAuthStore();
+  const { theme } = useTheme();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teacherSessions, setTeacherSessions] = useState<TeacherSession[]>([]);
   const [activeTeachers, setActiveTeachers] = useState<ActiveTeacherData[]>([]);
