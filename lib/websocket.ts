@@ -14,7 +14,8 @@ class WebSocketService {
     }
 
     this.socket = io(this.url, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling'], // Use only HTTP polling (Vercel doesn't support WebSocket)
+      upgrade: false, // Prevent upgrade to WebSocket
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,

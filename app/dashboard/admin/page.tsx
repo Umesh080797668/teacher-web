@@ -46,10 +46,13 @@ export default function AdminDashboardPage() {
     
     loadData();
     
-    // Setup real-time socket connection
+    // Setup real-time socket connection with HTTP polling for Vercel compatibility
     const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004', {
-      transports: ['websocket', 'polling'],
-      upgrade: true,
+      transports: ['polling'], // Use only HTTP polling (Vercel doesn't support WebSocket)
+      upgrade: false, // Prevent upgrade to WebSocket
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
     
     socketRef.current = socket;
