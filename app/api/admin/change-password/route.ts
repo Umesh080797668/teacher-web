@@ -1,7 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import clientPromise from '@/lib/mongodb';
+import mongoose from 'mongoose';
+
+// Database connection helper for serverless / edge-friendly usage
+let cachedConnection: any = null;
+async function dbConnect() {
+  if (cachedConnection && mongoose.connection.readyState === 1) {
+    return;
+  }
+
+  const mongoUri =
+    process.env.MONGODB_URI ||
+    process.env.MONGODB ||
+    'mongodb://localhost:27017/attendance';
+
+  await mongoose.connect(mongoUri, {
+    // Mongoose v6+ uses sensible defaults; adjust options if needed
+    serverSelectionTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+  });
+
+  cachedConnection = mongoose;
+}
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -47,10 +68,18 @@ export async function PUT(req: NextRequest) {
     }
 
     // Connect to database
-    const client = await clientPromise;
-    const db = client.db('teacher_attendance');
-
-    // Get the admin user
+    await dbConnect();
+    
+    // Get the admin user using native MongoDB driver through Mongoose connection
+    const db = mongoose.connection.db;
+    
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database connection failed' },
+        { status: 500 }
+      );
+    }
+    
     const admin = await db.collection('admins').findOne({ 
       email: decoded.email 
     });
