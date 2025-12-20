@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (.dark &);
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -10,7 +12,8 @@
   --modal-bg: #ffffff;
 }
 
-[data-theme="dark"] {
+[data-theme="dark"],
+.dark {
   --background: #0f172a;
   --foreground: #e2e8f0;
   --card-bg: #1e293b;
@@ -48,7 +51,10 @@ select {
 /* Enhanced input visibility in dark mode */
 [data-theme="dark"] input,
 [data-theme="dark"] textarea,
-[data-theme="dark"] select {
+[data-theme="dark"] select,
+.dark input,
+.dark textarea,
+.dark select {
   background-color: var(--input-bg);
   color: var(--foreground);
   border-color: var(--input-border);
@@ -56,18 +62,23 @@ select {
 
 [data-theme="dark"] input::placeholder,
 [data-theme="dark"] textarea::placeholder,
-[data-theme="dark"] select::placeholder {
+[data-theme="dark"] select::placeholder,
+.dark input::placeholder,
+.dark textarea::placeholder,
+.dark select::placeholder {
   color: #94a3b8;
   opacity: 1;
 }
 
 /* Modal backgrounds in dark mode */
-[data-theme="dark"] .modal-content {
+[data-theme="dark"] .modal-content,
+.dark .modal-content {
   background-color: var(--modal-bg);
 }
 
 /* Card backgrounds in dark mode */
-[data-theme="dark"] .card {
+[data-theme="dark"] .card,
+.dark .card {
   background-color: var(--card-bg);
   border-color: var(--border-color);
 }
