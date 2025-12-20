@@ -28,7 +28,6 @@ export default function UnifiedDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const qrCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const hasExpandedTeacher = teachers.some(t => t.isExpanded);
 
   const adminUser = user as AdminUser;
   const companyId = adminUser?._id;
@@ -42,15 +41,15 @@ export default function UnifiedDashboard() {
     }
     loadActiveTeachers();
     
-    // Start polling based on preferences, but pause when teacher details are expanded
-    if (preferences.autoRefresh && !hasExpandedTeacher) {
+    // Start polling based on preferences
+    if (preferences.autoRefresh) {
       pollingRef.current = setInterval(() => {
-        loadActiveTeachers();
+        // Only refresh if no teacher details are expanded
+        const hasExpanded = teachers.some(t => t.isExpanded);
+        if (!hasExpanded) {
+          loadActiveTeachers();
+        }
       }, preferences.refreshInterval * 1000);
-    } else if (pollingRef.current && hasExpandedTeacher) {
-      // Stop polling when details are expanded
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
     }
 
     return () => {
@@ -62,7 +61,7 @@ export default function UnifiedDashboard() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, userType, router, preferences.autoRefresh, preferences.refreshInterval, isHydrated, hasExpandedTeacher]);
+  }, [isAuthenticated, userType, router, preferences.autoRefresh, preferences.refreshInterval, isHydrated]);
 
   const loadActiveTeachers = async () => {
     if (!companyId) return;
