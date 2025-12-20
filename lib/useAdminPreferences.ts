@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 export interface AdminPreferences {
   autoRefresh: boolean;
   refreshInterval: number; // in seconds
+  darkMode: boolean;
   notifications: boolean;
   sessionTimeout: number; // in minutes, -1 for never
 }
@@ -10,6 +11,7 @@ export interface AdminPreferences {
 const DEFAULT_PREFERENCES: AdminPreferences = {
   autoRefresh: true,
   refreshInterval: 3,
+  darkMode: false,
   notifications: true,
   sessionTimeout: 30,
 };
@@ -27,10 +29,27 @@ export function useAdminPreferences() {
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           const parsed = JSON.parse(saved);
-          setPreferencesState({ ...DEFAULT_PREFERENCES, ...parsed });
+          const loadedPrefs = { ...DEFAULT_PREFERENCES, ...parsed };
+          setPreferencesState(loadedPrefs);
+          
+          // Immediately apply dark mode on load
+          if (loadedPrefs.darkMode) {
+            document.documentElement.classList.add('dark');
+            document.documentElement.setAttribute('data-theme', 'dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } else {
+          // No saved preferences, ensure light mode by default
+          document.documentElement.classList.remove('dark');
+          document.documentElement.setAttribute('data-theme', 'light');
         }
       } catch (e) {
         console.error('Error loading preferences:', e);
+        // On error, default to light mode
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-theme', 'light');
       } finally {
         setIsLoaded(true);
       }
@@ -38,6 +57,19 @@ export function useAdminPreferences() {
 
     loadPreferences();
   }, []);
+
+  // Apply dark mode whenever it changes
+  useEffect(() => {
+    if (isLoaded) {
+      if (preferences.darkMode) {
+        document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    }
+  }, [preferences.darkMode, isLoaded]);
 
   // Save preferences to localStorage
   const savePreferences = useCallback((newPreferences: Partial<AdminPreferences>) => {
@@ -61,7 +93,7 @@ export function useAdminPreferences() {
   }, [savePreferences]);
 
   // Toggle boolean preferences
-  const togglePreference = useCallback((key: keyof Pick<AdminPreferences, 'autoRefresh' | 'notifications'>) => {
+  const togglePreference = useCallback((key: keyof Pick<AdminPreferences, 'autoRefresh' | 'darkMode' | 'notifications'>) => {
     setPreferencesState(prev => {
       const updated = { ...prev, [key]: !prev[key] };
       try {
