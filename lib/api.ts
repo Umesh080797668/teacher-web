@@ -92,7 +92,7 @@ export const sessionApi = {
   generateQR: (companyId?: string) => 
     api.post('/api/web-session/generate-qr', { companyId }),
   verifySession: (sessionId: string) => 
-    api.get(`/api/web-session/check-auth/${sessionId}`),
+    api.post('/api/web-session/verify', { sessionId }),
   disconnectSession: (sessionId: string) => 
     api.post('/api/web-session/disconnect', { sessionId }),
   getActiveSessions: (companyId?: string) => 

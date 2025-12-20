@@ -43,6 +43,8 @@ export default function TeacherDashboardPage() {
       return;
     }
 
+    let intervalId: NodeJS.Timeout | null = null;
+
     const checkSessionStatus = async () => {
       try {
         // Use the proper API method instead of direct fetch
@@ -58,23 +60,40 @@ export default function TeacherDashboardPage() {
       } catch (error: any) {
         // Handle API errors gracefully
         if (error.response?.status === 404) {
-          console.log('Session verification endpoint not available, but session may still be active');
-          // Don't show error toast for 404 - this is expected when backend is not available
+          console.log('Session not found or expired, logging out...');
+          toast.error('Your session has been disconnected');
+          logout();
+          router.push('/login');
         } else if (error.response?.status === 401) {
           console.log('Session unauthorized, logging out...');
           toast.error('Your session has expired');
           logout();
           router.push('/login');
+        } else if (error.response?.status === 500) {
+          console.log('Server error checking session, will retry...');
+          // Don't logout on server errors - just retry on next interval
         } else {
-          // Network error or other issues - don't show to user, just log
-          console.log('Session verification network error (expected when backend unavailable)');
+          // Network error or other issues - don't logout, just log
+          console.log('Session verification network error (will retry):', error.message);
         }
-        // On any error, don't logout - just continue polling
       }
-    };    // Check session status every 5 seconds
-    const intervalId = setInterval(checkSessionStatus, 5000);
+    };
 
-    return () => clearInterval(intervalId);
+    // Wait 3 seconds before starting to poll to give time for initial setup
+    const initialDelay = setTimeout(() => {
+      // Check immediately after delay
+      checkSessionStatus();
+      
+      // Then check session status every 5 seconds
+      intervalId = setInterval(checkSessionStatus, 5000);
+    }, 3000);
+
+    return () => {
+      clearTimeout(initialDelay);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
   }, [isAuthenticated, userType, session, logout, router]);
 
   useEffect(() => {
