@@ -8,13 +8,8 @@ import { teachersApi, sessionApi, classesApi, studentsApi, attendanceApi } from 
 import toast from 'react-hot-toast';
 import type { Teacher, AdminUser, ActiveTeacherData, Class, Student, Attendance } from '@/lib/types';
 import { useAdminPreferences } from '@/lib/useAdminPreferences';
-
-interface UnifiedTeacherData extends ActiveTeacherData {
-  classes: Class[];
-  students: Student[];
-  todayAttendance: Attendance[];
-  isExpanded: boolean;
-}
+import TeacherDetailsView from './TeacherDetailsView';
+import type { UnifiedTeacherData } from './types';
 
 export default function UnifiedDashboard() {
   const router = useRouter();
@@ -528,45 +523,7 @@ function TeacherCard({
 
       {/* Expanded Details */}
       {teacher.isExpanded && (
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-            <button
-              onClick={() => window.open(`/dashboard/teacher/students?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
-            >
-              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">👥</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Students</span>
-            </button>
-            <button
-              onClick={() => window.open(`/dashboard/teacher/classes?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
-            >
-              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📚</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Classes</span>
-            </button>
-            <button
-              onClick={() => window.open(`/dashboard/teacher/attendance?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
-            >
-              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📅</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Attendance</span>
-            </button>
-            <button
-              onClick={() => window.open(`/dashboard/teacher/payments?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
-            >
-              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">💰</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Payments</span>
-            </button>
-            <button
-              onClick={() => window.open(`/dashboard/teacher/reports?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
-            >
-              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📊</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Reports</span>
-            </button>
-          </div>
-        </div>
+        <TeacherDetailsView teacher={teacher} onMarkAttendance={onMarkAttendance} />
       )}
     </div>
   );
@@ -635,45 +592,7 @@ function TeacherListItem({
       </div>
 
       {teacher.isExpanded && (
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-            <button
-              onClick={() => window.open(`/dashboard/teacher/students?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
-            >
-              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">👥</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Students</span>
-            </button>
-            <button
-              onClick={() => window.open(`/dashboard/teacher/classes?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
-            >
-              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📚</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Classes</span>
-            </button>
-            <button
-              onClick={() => window.open(`/dashboard/teacher/attendance?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
-            >
-              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">�</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Attendance</span>
-            </button>
-            <button
-              onClick={() => window.open(`/dashboard/teacher/payments?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
-            >
-              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">💰</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Payments</span>
-            </button>
-            <button
-              onClick={() => window.open(`/dashboard/teacher/reports?teacherId=${teacher.teacher.teacherId}`, '_blank')}
-              className="flex flex-col items-center justify-center p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition group"
-            >
-              <span className="text-2xl mb-2 group-hover:scale-110 transition-transform">📊</span>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Reports</span>
-            </button>
-          </div>
-        </div>
+        <TeacherDetailsView teacher={teacher} onMarkAttendance={onMarkAttendance} />
       )}
     </div>
   );
