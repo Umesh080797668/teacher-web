@@ -520,7 +520,7 @@ export default function ReportsPage() {
                           <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
                             <div className="flex items-center justify-between">
                               <h4 className="text-lg font-semibold text-white">{cls.name}</h4>
-                              <span className="px-3 py-1 bg-white bg-opacity-20 text-white rounded-full text-sm font-medium">
+                              <span className="px-3 py-1 bg-white bg-opacity-30 text-gray-800 rounded-full text-sm font-medium border border-white border-opacity-20">
                                 {classStudents.length} Students
                               </span>
                             </div>
