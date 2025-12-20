@@ -377,6 +377,7 @@ export default function UnifiedDashboard() {
                 onLogout={handleLogoutTeacher}
                 onToggleExpand={toggleTeacherExpanded}
                 onMarkAttendance={handleMarkAttendance}
+                onRefresh={loadActiveTeachers}
               />
             ))}
           </div>
@@ -389,6 +390,7 @@ export default function UnifiedDashboard() {
                 onLogout={handleLogoutTeacher}
                 onToggleExpand={toggleTeacherExpanded}
                 onMarkAttendance={handleMarkAttendance}
+                onRefresh={loadActiveTeachers}
               />
             ))}
           </div>
@@ -432,12 +434,14 @@ function TeacherCard({
   teacher, 
   onLogout, 
   onToggleExpand,
-  onMarkAttendance 
+  onMarkAttendance,
+  onRefresh
 }: { 
   teacher: UnifiedTeacherData;
   onLogout: (sessionId: string, name: string) => void;
   onToggleExpand: (sessionId: string) => void;
   onMarkAttendance: (teacherId: string, studentId: string, status: 'present' | 'absent' | 'late') => void;
+  onRefresh: () => void;
 }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -523,7 +527,7 @@ function TeacherCard({
 
       {/* Expanded Details */}
       {teacher.isExpanded && (
-        <TeacherDetailsView teacher={teacher} onMarkAttendance={onMarkAttendance} />
+        <TeacherDetailsView teacher={teacher} onMarkAttendance={onMarkAttendance} onRefresh={onRefresh} />
       )}
     </div>
   );
@@ -534,12 +538,14 @@ function TeacherListItem({
   teacher, 
   onLogout, 
   onToggleExpand,
-  onMarkAttendance 
+  onMarkAttendance,
+  onRefresh
 }: { 
   teacher: UnifiedTeacherData;
   onLogout: (sessionId: string, name: string) => void;
   onToggleExpand: (sessionId: string) => void;
   onMarkAttendance: (teacherId: string, studentId: string, status: 'present' | 'absent' | 'late') => void;
+  onRefresh: () => void;
 }) {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -592,7 +598,7 @@ function TeacherListItem({
       </div>
 
       {teacher.isExpanded && (
-        <TeacherDetailsView teacher={teacher} onMarkAttendance={onMarkAttendance} />
+        <TeacherDetailsView teacher={teacher} onMarkAttendance={onMarkAttendance} onRefresh={onRefresh} />
       )}
     </div>
   );

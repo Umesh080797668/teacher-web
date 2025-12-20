@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import type { ActiveTeacherData, Class, Student, Attendance } from '@/lib/types';
-import { paymentsApi } from '@/lib/api';
+import { paymentsApi, studentsApi, classesApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Payment } from '@/lib/types';
+import Pagination from '@/lib/Pagination';
 
 interface UnifiedTeacherData extends ActiveTeacherData {
   classes: Class[];
@@ -16,16 +17,40 @@ interface UnifiedTeacherData extends ActiveTeacherData {
 interface TeacherDetailsViewProps {
   teacher: UnifiedTeacherData;
   onMarkAttendance: (teacherId: string, studentId: string, status: 'present' | 'absent' | 'late') => void;
+  onRefresh?: () => void;
 }
 
 type TabType = 'students' | 'classes' | 'attendance' | 'payments' | 'reports';
 
-export default function TeacherDetailsView({ teacher, onMarkAttendance }: TeacherDetailsViewProps) {
+export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefresh }: TeacherDetailsViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>('students');
   const [payments, setPayments] = useState<Payment[]>([]);
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Student Tab State
+  const [studentPage, setStudentPage] = useState(1);
+  const [filterClassId, setFilterClassId] = useState<string>('all');
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [newStudent, setNewStudent] = useState({ name: '', email: '', studentId: '', classId: '' });
+
+  // Class Tab State
+  const [showAddClassModal, setShowAddClassModal] = useState(false);
+  const [editingClass, setEditingClass] = useState<Class | null>(null);
+  const [newClass, setNewClass] = useState({ name: '', description: '' });
+
+  // Attendance Tab State
+  const [attendancePage, setAttendancePage] = useState(1);
+
+  // Reports Tab State
+  const [reportTab, setReportTab] = useState<'summary' | 'students' | 'daily' | 'monthly'>('summary');
+
+  // Payment Tab State
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+  const [newPayment, setNewPayment] = useState({ studentId: '', amount: '', type: 'full', month: new Date().getMonth() + 1, year: new Date().getFullYear() });
+
+  const ITEMS_PER_PAGE = 10;
 
   const loadPayments = async () => {
     setLoadingPayments(true);
@@ -44,6 +69,81 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance }: Teache
     setActiveTab(tab);
     if (tab === 'payments' && payments.length === 0) {
       loadPayments();
+    }
+  };
+
+  const handleAddStudent = async () => {
+    try {
+      await studentsApi.create({ ...newStudent, teacherId: teacher.teacher.teacherId } as any);
+      toast.success('Student added successfully');
+      setShowAddStudentModal(false);
+      setNewStudent({ name: '', email: '', studentId: '', classId: '' });
+      onRefresh?.();
+    } catch (error) {
+      toast.error('Failed to add student');
+    }
+  };
+
+  const handleRemoveStudent = async (studentId: string) => {
+    if (!confirm('Are you sure you want to remove this student?')) return;
+    try {
+      await studentsApi.delete(studentId);
+      toast.success('Student removed successfully');
+      onRefresh?.();
+    } catch (error) {
+      toast.error('Failed to remove student');
+    }
+  };
+
+  const handleAddClass = async () => {
+    try {
+      await classesApi.create({ ...newClass, teacherId: teacher.teacher.teacherId });
+      toast.success('Class added successfully');
+      setShowAddClassModal(false);
+      setNewClass({ name: '', description: '' });
+      onRefresh?.();
+    } catch (error) {
+      toast.error('Failed to add class');
+    }
+  };
+
+  const handleUpdateClass = async () => {
+    if (!editingClass) return;
+    try {
+      await classesApi.update(editingClass._id, { name: editingClass.name });
+      toast.success('Class updated successfully');
+      setEditingClass(null);
+      onRefresh?.();
+    } catch (error) {
+      toast.error('Failed to update class');
+    }
+  };
+
+  const handleRemoveClass = async (classId: string) => {
+    if (!confirm('Are you sure you want to remove this class?')) return;
+    try {
+      await classesApi.delete(classId);
+      toast.success('Class removed successfully');
+      onRefresh?.();
+    } catch (error) {
+      toast.error('Failed to remove class');
+    }
+  };
+
+  const handleAddPayment = async () => {
+    try {
+      await paymentsApi.create({ 
+        ...newPayment, 
+        amount: Number(newPayment.amount),
+        type: newPayment.type as 'full' | 'half' | 'free',
+        classId: teacher.students.find(s => s._id === newPayment.studentId)?.classId || '' 
+      });
+      toast.success('Payment added successfully');
+      setShowAddPaymentModal(false);
+      setNewPayment({ studentId: '', amount: '', type: 'full', month: new Date().getMonth() + 1, year: new Date().getFullYear() });
+      loadPayments();
+    } catch (error) {
+      toast.error('Failed to add payment');
     }
   };
 
@@ -143,6 +243,27 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance }: Teache
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 All Students ({teacher.students.length})
               </h3>
+              <div className="flex space-x-2">
+                <select
+                  value={filterClassId}
+                  onChange={(e) => {
+                    setFilterClassId(e.target.value);
+                    setStudentPage(1);
+                  }}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                >
+                  <option value="all">All Classes</option>
+                  {teacher.classes.map(cls => (
+                    <option key={cls._id} value={cls._id}>{cls.name}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setShowAddStudentModal(true)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+                >
+                  + Add Student
+                </button>
+              </div>
             </div>
             
             {teacher.students.length === 0 ? (
@@ -150,76 +271,108 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance }: Teache
                 No students found
               </div>
             ) : (
-              <div className="grid gap-3">
-                {teacher.students.map(student => {
-                  const studentClass = teacher.classes.find(c => c._id === student.classId);
-                  const todayAtt = todayAttendance.find(a => a.studentId === student._id);
-                  
-                  return (
-                    <div key={student._id} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                              <span className="text-lg">👤</span>
+              <>
+                <div className="grid gap-3">
+                  {teacher.students
+                    .filter(s => filterClassId === 'all' || s.classId === filterClassId)
+                    .sort((a, b) => {
+                      const aAtt = todayAttendance.find(att => att.studentId === a._id);
+                      const bAtt = todayAttendance.find(att => att.studentId === b._id);
+                      // Unmarked first
+                      if (!aAtt && bAtt) return -1;
+                      if (aAtt && !bAtt) return 1;
+                      return 0;
+                    })
+                    .slice((studentPage - 1) * ITEMS_PER_PAGE, studentPage * ITEMS_PER_PAGE)
+                    .map(student => {
+                      const studentClass = teacher.classes.find(c => c._id === student.classId);
+                      const todayAtt = todayAttendance.find(a => a.studentId === student._id);
+                      
+                      return (
+                        <div key={student._id} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                                  <span className="text-lg">👤</span>
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-gray-900 dark:text-white">{student.name}</h4>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                                    {student.email || 'No email'} • ID: {student.studentId}
+                                  </p>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="font-medium text-gray-900 dark:text-white">{student.name}</h4>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {student.email || 'No email'} • ID: {student.studentId}
-                              </p>
+                            
+                            <div className="flex items-center space-x-3">
+                              {studentClass && (
+                                <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm rounded-full">
+                                  {studentClass.name}
+                                </span>
+                              )}
+                              
+                              {todayAtt ? (
+                                <span className={`px-3 py-1 text-sm rounded-full font-medium ${
+                                  todayAtt.status === 'present' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                  todayAtt.status === 'absent' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
+                                  'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
+                                }`}>
+                                  {todayAtt.status === 'present' ? '✓ Present' :
+                                   todayAtt.status === 'absent' ? '✗ Absent' :
+                                   '⏰ Late'}
+                                </span>
+                              ) : (
+                                <div className="flex space-x-1">
+                                  <button
+                                    onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'present')}
+                                    className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
+                                    title="Mark Present"
+                                  >
+                                    ✓
+                                  </button>
+                                  <button
+                                    onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'absent')}
+                                    className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                                    title="Mark Absent"
+                                  >
+                                    ✗
+                                  </button>
+                                  <button
+                                    onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'late')}
+                                    className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
+                                    title="Mark Late"
+                                  >
+                                    ⏰
+                                  </button>
+                                </div>
+                              )}
+                              <button
+                                onClick={() => handleRemoveStudent(student._id)}
+                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full"
+                                title="Remove Student"
+                              >
+                                🗑️
+                              </button>
                             </div>
                           </div>
                         </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          {studentClass && (
-                            <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm rounded-full">
-                              {studentClass.name}
-                            </span>
-                          )}
-                          
-                          {todayAtt ? (
-                            <span className={`px-3 py-1 text-sm rounded-full font-medium ${
-                              todayAtt.status === 'present' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                              todayAtt.status === 'absent' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                              'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300'
-                            }`}>
-                              {todayAtt.status === 'present' ? '✓ Present' :
-                               todayAtt.status === 'absent' ? '✗ Absent' :
-                               '⏰ Late'}
-                            </span>
-                          ) : (
-                            <div className="flex space-x-1">
-                              <button
-                                onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'present')}
-                                className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
-                                title="Mark Present"
-                              >
-                                ✓
-                              </button>
-                              <button
-                                onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'absent')}
-                                className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                                title="Mark Absent"
-                              >
-                                ✗
-                              </button>
-                              <button
-                                onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'late')}
-                                className="px-2 py-1 bg-orange-600 text-white text-xs rounded hover:bg-orange-700"
-                                title="Mark Late"
-                              >
-                                ⏰
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                      );
+                    })}
+                </div>
+                
+                {/* Pagination */}
+                {teacher.students.filter(s => filterClassId === 'all' || s.classId === filterClassId).length > ITEMS_PER_PAGE && (
+                  <div className="flex justify-center mt-4">
+                    <Pagination
+                      currentPage={studentPage}
+                      totalItems={teacher.students.filter(s => filterClassId === 'all' || s.classId === filterClassId).length}
+                      itemsPerPage={ITEMS_PER_PAGE}
+                      onPageChange={setStudentPage}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -227,9 +380,17 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance }: Teache
         {/* Classes Tab */}
         {activeTab === 'classes' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              All Classes ({teacher.classes.length})
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                All Classes ({teacher.classes.length})
+              </h3>
+              <button
+                onClick={() => setShowAddClassModal(true)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+              >
+                + Add Class
+              </button>
+            </div>
             
             {teacher.classes.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -249,7 +410,22 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance }: Teache
                             {classStudents.length} student{classStudents.length !== 1 ? 's' : ''}
                           </p>
                         </div>
-                        <div className="text-3xl">📚</div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => setEditingClass(cls)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full"
+                            title="Edit Class"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => handleRemoveClass(cls._id)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full"
+                            title="Remove Class"
+                          >
+                            �️
+                          </button>
+                        </div>
                       </div>
                       
                       {classStudents.length > 0 && (
@@ -308,7 +484,17 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance }: Teache
             </div>
 
             <div className="space-y-3">
-              {teacher.students.map(student => {
+              {teacher.students
+                .sort((a, b) => {
+                  const aAtt = todayAttendance.find(att => att.studentId === a._id);
+                  const bAtt = todayAttendance.find(att => att.studentId === b._id);
+                  // Unmarked first
+                  if (!aAtt && bAtt) return -1;
+                  if (aAtt && !bAtt) return 1;
+                  return 0;
+                })
+                .slice((attendancePage - 1) * ITEMS_PER_PAGE, attendancePage * ITEMS_PER_PAGE)
+                .map(student => {
                 const studentClass = teacher.classes.find(c => c._id === student.classId);
                 const todayAtt = todayAttendance.find(a => a.studentId === student._id);
                 
@@ -364,15 +550,35 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance }: Teache
                 );
               })}
             </div>
+            
+            {/* Pagination */}
+            {teacher.students.length > ITEMS_PER_PAGE && (
+              <div className="flex justify-center mt-4">
+                <Pagination
+                  currentPage={attendancePage}
+                  totalItems={teacher.students.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={setAttendancePage}
+                />
+              </div>
+            )}
           </div>
         )}
 
         {/* Payments Tab */}
         {activeTab === 'payments' && (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Payment Records
-            </h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Payment Records
+              </h3>
+              <button
+                onClick={() => setShowAddPaymentModal(true)}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+              >
+                + Add Payment
+              </button>
+            </div>
             
             {loadingPayments ? (
               <div className="text-center py-8">
@@ -453,97 +659,324 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance }: Teache
               </div>
             </div>
 
-            {/* Today's Summary */}
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Today's Summary</h4>
-              <div className="grid grid-cols-4 gap-4">
-                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{teacher.students.length}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Total Students</div>
-                </div>
-                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">{teacher.stats.todayPresent}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Present Today</div>
-                </div>
-                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">{teacher.stats.todayAbsent}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Absent Today</div>
-                </div>
-                <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
-                  <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{todayLate}</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Late Today</div>
-                </div>
-              </div>
+            {/* Sub Tabs */}
+            <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+              <nav className="-mb-px flex space-x-8">
+                {[
+                  { id: 'summary', name: 'Summary' },
+                  { id: 'students', name: 'Student Reports' },
+                  { id: 'daily', name: 'Daily View' },
+                  { id: 'monthly', name: 'Monthly Stats' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setReportTab(tab.id as any)}
+                    className={`
+                      whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
+                      ${reportTab === tab.id
+                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                        : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'}
+                    `}
+                  >
+                    {tab.name}
+                  </button>
+                ))}
+              </nav>
             </div>
 
-            {/* Class Reports */}
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-3">Today's Attendance by Class</h4>
-              <div className="space-y-3">
-                {classReports.map(cls => (
-                  <div key={cls._id} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h5 className="font-medium text-gray-900 dark:text-white">{cls.name}</h5>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {cls.totalStudents} student{cls.totalStudents !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                      <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                        {cls.rate.toFixed(1)}%
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-green-600 dark:text-green-400">{cls.presentCount}</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">Present</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-red-600 dark:text-red-400">{cls.absentCount}</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">Absent</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{cls.lateCount}</div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">Late</div>
-                      </div>
-                    </div>
+            {/* Summary Tab */}
+            {reportTab === 'summary' && (
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Today's Summary</h4>
+                <div className="grid grid-cols-4 gap-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{teacher.students.length}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Total Students</div>
                   </div>
-                ))}
+                  <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{teacher.stats.todayPresent}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Present Today</div>
+                  </div>
+                  <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">{teacher.stats.todayAbsent}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Absent Today</div>
+                  </div>
+                  <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4">
+                    <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{todayLate}</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">Late Today</div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Daily View (Class Reports) */}
+            {reportTab === 'daily' && (
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Today's Attendance by Class</h4>
+                <div className="space-y-3">
+                  {classReports.map(cls => (
+                    <div key={cls._id} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h5 className="font-medium text-gray-900 dark:text-white">{cls.name}</h5>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {cls.totalStudents} student{cls.totalStudents !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                        <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
+                          {cls.rate.toFixed(1)}%
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-green-600 dark:text-green-400">{cls.presentCount}</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Present</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-red-600 dark:text-red-400">{cls.absentCount}</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Absent</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{cls.lateCount}</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Late</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Student Reports */}
-            <div>
-              <h4 className="font-medium text-gray-900 dark:text-white mb-3">
-                Student Attendance ({monthNames[selectedMonth - 1]} {selectedYear})
-              </h4>
-              <div className="space-y-2">
-                {studentReports.map(student => (
-                  <div key={student._id} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h5 className="font-medium text-gray-900 dark:text-white text-sm">{student.name}</h5>
-                        <div className="flex space-x-4 mt-1">
-                          <span className="text-xs text-green-600 dark:text-green-400">✓ {student.presentCount}</span>
-                          <span className="text-xs text-red-600 dark:text-red-400">✗ {student.absentCount}</span>
-                          <span className="text-xs text-orange-600 dark:text-orange-400">⏰ {student.lateCount}</span>
+            {reportTab === 'students' && (
+              <div>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+                  Student Attendance ({monthNames[selectedMonth - 1]} {selectedYear})
+                </h4>
+                <div className="space-y-2">
+                  {studentReports.map(student => (
+                    <div key={student._id} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <h5 className="font-medium text-gray-900 dark:text-white text-sm">{student.name}</h5>
+                          <div className="flex space-x-4 mt-1">
+                            <span className="text-xs text-green-600 dark:text-green-400">✓ {student.presentCount}</span>
+                            <span className="text-xs text-red-600 dark:text-red-400">✗ {student.absentCount}</span>
+                            <span className="text-xs text-orange-600 dark:text-orange-400">⏰ {student.lateCount}</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-lg font-bold ${
-                          student.rate >= 80 ? 'text-green-600 dark:text-green-400' :
-                          student.rate >= 60 ? 'text-orange-600 dark:text-orange-400' :
-                          'text-red-600 dark:text-red-400'
-                        }`}>
-                          {student.rate.toFixed(1)}%
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {student.total} day{student.total !== 1 ? 's' : ''}
+                        <div className="text-right">
+                          <div className={`text-lg font-bold ${
+                            student.rate >= 80 ? 'text-green-600 dark:text-green-400' :
+                            student.rate >= 60 ? 'text-orange-600 dark:text-orange-400' :
+                            'text-red-600 dark:text-red-400'
+                          }`}>
+                            {student.rate.toFixed(1)}%
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {student.total} day{student.total !== 1 ? 's' : ''}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* Monthly Stats */}
+            {reportTab === 'monthly' && (
+               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                 Monthly stats visualization coming soon.
+               </div>
+            )}
+          </div>
+        )}
+
+        {/* Modals */}
+        {showAddStudentModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add New Student</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={newStudent.name}
+                    onChange={e => setNewStudent({ ...newStudent, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student ID</label>
+                  <input
+                    type="text"
+                    value={newStudent.studentId}
+                    onChange={e => setNewStudent({ ...newStudent, studentId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email (Optional)</label>
+                  <input
+                    type="email"
+                    value={newStudent.email}
+                    onChange={e => setNewStudent({ ...newStudent, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class</label>
+                  <select
+                    value={newStudent.classId}
+                    onChange={e => setNewStudent({ ...newStudent, classId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">Select Class</option>
+                    {teacher.classes.map(cls => (
+                      <option key={cls._id} value={cls._id}>{cls.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={() => setShowAddStudentModal(false)}
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddStudent}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  >
+                    Add Student
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAddClassModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add New Class</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class Name</label>
+                  <input
+                    type="text"
+                    value={newClass.name}
+                    onChange={e => setNewClass({ ...newClass, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={() => setShowAddClassModal(false)}
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddClass}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  >
+                    Add Class
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {editingClass && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Edit Class</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class Name</label>
+                  <input
+                    type="text"
+                    value={editingClass.name}
+                    onChange={e => setEditingClass({ ...editingClass, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={() => setEditingClass(null)}
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdateClass}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  >
+                    Update Class
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showAddPaymentModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add Payment</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Student</label>
+                  <select
+                    value={newPayment.studentId}
+                    onChange={e => setNewPayment({ ...newPayment, studentId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">Select Student</option>
+                    {teacher.students.map(student => (
+                      <option key={student._id} value={student._id}>{student.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+                  <input
+                    type="number"
+                    value={newPayment.amount}
+                    onChange={e => setNewPayment({ ...newPayment, amount: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                  <select
+                    value={newPayment.type}
+                    onChange={e => setNewPayment({ ...newPayment, type: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="full">Full</option>
+                    <option value="half">Half</option>
+                    <option value="free">Free</option>
+                  </select>
+                </div>
+                <div className="flex justify-end space-x-3 mt-6">
+                  <button
+                    onClick={() => setShowAddPaymentModal(false)}
+                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddPayment}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  >
+                    Add Payment
+                  </button>
+                </div>
               </div>
             </div>
           </div>
