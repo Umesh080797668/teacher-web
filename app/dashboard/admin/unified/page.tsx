@@ -69,10 +69,10 @@ export default function UnifiedDashboard() {
         activeTeachers.map(async (teacher: ActiveTeacherData) => {
           try {
             const [classesRes, studentsRes, attendanceRes] = await Promise.all([
-              classesApi.getAll(teacher.teacher._id),
-              studentsApi.getAll(teacher.teacher._id),
+              classesApi.getAll(teacher.teacher.teacherId),
+              studentsApi.getAll(teacher.teacher.teacherId),
               attendanceApi.getAll({
-                teacherId: teacher.teacher._id,
+                teacherId: teacher.teacher.teacherId,
                 month: new Date().getMonth() + 1,
                 year: new Date().getFullYear(),
               }),
@@ -534,14 +534,14 @@ function TeacherCard({
                       ) : (
                         <div className="flex space-x-1">
                           <button
-                            onClick={() => onMarkAttendance(teacher.teacher._id, student._id, 'present')}
+                            onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'present')}
                             className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                             title="Present"
                           >
                             ✓
                           </button>
                           <button
-                            onClick={() => onMarkAttendance(teacher.teacher._id, student._id, 'absent')}
+                            onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'absent')}
                             className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
                             title="Absent"
                           >
@@ -663,13 +663,13 @@ function TeacherListItem({
                       ) : (
                         <div className="flex space-x-1">
                           <button
-                            onClick={() => onMarkAttendance(teacher.teacher._id, student._id, 'present')}
+                            onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'present')}
                             className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700"
                           >
                             ✓ Present
                           </button>
                           <button
-                            onClick={() => onMarkAttendance(teacher.teacher._id, student._id, 'absent')}
+                            onClick={() => onMarkAttendance(teacher.teacher.teacherId, student._id, 'absent')}
                             className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
                           >
                             ✗ Absent
