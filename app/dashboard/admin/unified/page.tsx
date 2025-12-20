@@ -76,9 +76,9 @@ export default function UnifiedDashboard() {
       const response = await sessionApi.getActiveTeachers(companyId);
       const activeTeachers = response.data.teachers || [];
       
-      // Preserve existing expanded states
+      // Preserve existing expanded states using ref to ensure latest state
       const existingExpandedStates = new Map(
-        teachers.map(t => [t.sessionId, t.isExpanded])
+        teachersRef.current.map(t => [t.sessionId, t.isExpanded])
       );
       
       // Load detailed data for each teacher
