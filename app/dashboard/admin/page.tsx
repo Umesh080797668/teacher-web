@@ -17,9 +17,11 @@ export default function AdminDashboardPage() {
   const [selectedTeacher, setSelectedTeacher] = useState<ActiveTeacherData | null>(null);
   const [teacherDetails, setTeacherDetails] = useState<TeacherDetailedData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'teachers' | 'sessions' | 'qr-login' | 'manage-active'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'teachers' | 'sessions' | 'qr-login'>('overview');
   const [showTeacherModal, setShowTeacherModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
   const [qrCodeData, setQrCodeData] = useState<string>('');
   const [newTeacher, setNewTeacher] = useState({
     name: '',
@@ -28,7 +30,6 @@ export default function AdminDashboardPage() {
     password: '',
   });
   const qrCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const activeTeachersPollingRef = useRef<NodeJS.Timeout | null>(null);
 
   const adminUser = user as AdminUser;
   const companyId = adminUser?._id;
@@ -186,6 +187,24 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleDeleteTeacher = async () => {
+    if (!teacherToDelete) return;
+
+    try {
+      await teachersApi.delete(teacherToDelete._id);
+      toast.success(`Teacher ${teacherToDelete.name} has been removed successfully`);
+      setShowDeleteDialog(false);
+      setTeacherToDelete(null);
+      loadData(); // Refresh the data to update the UI
+    } catch (error) {
+      console.error('Error deleting teacher:', error);
+      const errorMessage = error && typeof error === 'object' && 'response' in error 
+        ? (error as { response?: { data?: { error?: string } } }).response?.data?.error 
+        : undefined;
+      toast.error(errorMessage || 'Failed to delete teacher');
+    }
+  };
+
   const handleGenerateQR = async () => {
     if (!companyId) {
       console.error('Company ID is missing in handleGenerateQR');
@@ -276,31 +295,6 @@ export default function AdminDashboardPage() {
       console.error('Error loading active teachers:', error);
     }
   };
-
-  // Start polling for active teachers when on manage-active tab
-  useEffect(() => {
-    if (activeTab === 'manage-active' && companyId) {
-      // Initial load
-      loadActiveTeachers();
-      
-      // Start polling every 3 seconds
-      activeTeachersPollingRef.current = setInterval(() => {
-        loadActiveTeachers();
-      }, 3000);
-    } else {
-      // Clear polling when leaving tab
-      if (activeTeachersPollingRef.current) {
-        clearInterval(activeTeachersPollingRef.current);
-        activeTeachersPollingRef.current = null;
-      }
-    }
-    
-    return () => {
-      if (activeTeachersPollingRef.current) {
-        clearInterval(activeTeachersPollingRef.current);
-      }
-    };
-  }, [activeTab, companyId]);
 
   // Load detailed teacher data
   const loadTeacherDetails = async (sessionId: string) => {
@@ -422,12 +416,11 @@ export default function AdminDashboardPage() {
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'teachers', name: 'Company Teachers', icon: '👥' },
               { id: 'sessions', name: 'Active Sessions', icon: '🔌' },
-              { id: 'manage-active', name: 'Manage Active Teachers', icon: '🎮' },
               { id: 'qr-login', name: 'QR Login', icon: '📱' },
             ].map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as 'overview' | 'teachers' | 'sessions' | 'qr-login' | 'manage-active')}
+                onClick={() => setActiveTab(tab.id as 'overview' | 'teachers' | 'sessions' | 'qr-login')}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
@@ -618,6 +611,15 @@ export default function AdminDashboardPage() {
                           }`}
                         >
                           {teacher.status === 'active' ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setTeacherToDelete(teacher);
+                            setShowDeleteDialog(true);
+                          }}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          Remove
                         </button>
                       </td>
                     </tr>
@@ -819,130 +821,6 @@ export default function AdminDashboardPage() {
                   <span>Teachers can also logout from their mobile app</span>
                 </li>
               </ol>
-            </div>
-          </div>
-        )}
-
-        {/* Manage Active Teachers Tab */}
-        {activeTab === 'manage-active' && (
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Active Teachers</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Manage multiple teacher sessions in real-time • Auto-refreshing every 3 seconds
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2 text-green-600 dark:text-green-400">
-                  <div className="w-2 h-2 bg-green-600 dark:bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium">Live</span>
-                </div>
-              </div>
-
-              {activeTeachers.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">👨‍🏫</div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Active Teachers</h3>
-                  <p className="text-gray-500 dark:text-gray-400 mb-4">
-                    No teachers are currently logged in via the mobile app
-                  </p>
-                  <button
-                    onClick={() => setActiveTab('qr-login')}
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
-                  >
-                    Generate QR Code
-                  </button>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {activeTeachers.map((teacher) => (
-                    <div
-                      key={teacher.sessionId}
-                      className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-700 dark:to-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl p-6 hover:shadow-lg transition-all duration-200"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                            {teacher.teacher.name}
-                          </h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">{teacher.teacher.email}</p>
-                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                            ID: {teacher.teacher.teacherId}
-                          </p>
-                        </div>
-                        <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center">
-                          <span className="text-2xl">👨‍🏫</span>
-                        </div>
-                      </div>
-
-                      {/* Statistics */}
-                      <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3">
-                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                            {teacher.stats.classes}
-                          </div>
-                          <div className="text-xs text-blue-600 dark:text-blue-400">Classes</div>
-                        </div>
-                        <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3">
-                          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                            {teacher.stats.students}
-                          </div>
-                          <div className="text-xs text-purple-600 dark:text-purple-400">Students</div>
-                        </div>
-                        <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3">
-                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                            {teacher.stats.todayPresent}
-                          </div>
-                          <div className="text-xs text-green-600 dark:text-green-400">Present Today</div>
-                        </div>
-                        <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-3">
-                          <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                            {teacher.stats.todayAbsent}
-                          </div>
-                          <div className="text-xs text-red-600 dark:text-red-400">Absent Today</div>
-                        </div>
-                      </div>
-
-                      {/* Session Info */}
-                      <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-3 mb-4">
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Connected:</div>
-                        <div className="text-sm text-gray-700 dark:text-gray-300">
-                          {new Date(teacher.connectedAt).toLocaleString(undefined, {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: true
-                          })}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Device:</div>
-                        <div className="text-sm text-gray-700 dark:text-gray-300 truncate">
-                          {teacher.deviceId || 'Mobile App'}
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleViewTeacher(teacher)}
-                          className="flex-1 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium"
-                        >
-                          📊 View Details
-                        </button>
-                        <button
-                          onClick={() => handleLogoutTeacherSession(teacher.sessionId, teacher.teacher.name)}
-                          className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium"
-                          title="Logout Teacher"
-                        >
-                          🚪
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -1186,6 +1064,64 @@ export default function AdminDashboardPage() {
                 className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
               >
                 Create Teacher
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Teacher Confirmation Dialog */}
+      {showDeleteDialog && teacherToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center mb-4">
+              <div className="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mr-4">
+                <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Remove Teacher</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">This action cannot be undone</p>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-gray-700 dark:text-gray-300 mb-2">
+                Are you sure you want to remove <span className="font-semibold">{teacherToDelete.name}</span> from your company?
+              </p>
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                    <p className="font-medium mb-1">This will also:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Log out the teacher from any active sessions</li>
+                      <li>Remove them from the "Manage Active Teachers" tab</li>
+                      <li>Delete all their classes and student data</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  setTeacherToDelete(null);
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteTeacher}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Remove Teacher
               </button>
             </div>
           </div>

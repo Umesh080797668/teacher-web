@@ -28,6 +28,7 @@ export const teachersApi = {
   update: (id: string, data: Partial<Teacher>) => api.put<Teacher>(`/api/teachers/${id}`, data),
   updateStatus: (id: string, status: string) => 
     api.put(`/api/teachers/${id}/status`, { status }),
+  delete: (id: string) => api.delete(`/api/teachers/${id}`),
   getCompanyTeachers: (companyId: string) => 
     api.get<Teacher[]>(`/api/teachers/company/${companyId}`),
 };
