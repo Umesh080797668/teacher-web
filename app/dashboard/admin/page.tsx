@@ -674,13 +674,27 @@ export default function AdminDashboardPage() {
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Login: {session.loginTime ? new Date(session.loginTime).toLocaleString() : 'N/A'}
+                        Login: {session.loginTime ? new Date(session.loginTime).toLocaleString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
+                        }) : 'N/A'}
                       </div>
                       <div className="flex items-center text-gray-600 dark:text-gray-400">
                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                         </svg>
-                        Last Activity: {session.lastActivity ? new Date(session.lastActivity).toLocaleString() : 'N/A'}
+                        Last Activity: {session.lastActivity ? new Date(session.lastActivity).toLocaleString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: true
+                        }) : 'N/A'}
                       </div>
                       {session.deviceInfo && (
                         <div className="flex items-center text-gray-600 dark:text-gray-400">
@@ -888,7 +902,14 @@ export default function AdminDashboardPage() {
                       <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-3 mb-4">
                         <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Connected:</div>
                         <div className="text-sm text-gray-700 dark:text-gray-300">
-                          {new Date(teacher.connectedAt).toLocaleString()}
+                          {new Date(teacher.connectedAt).toLocaleString(undefined, {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                          })}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Device:</div>
                         <div className="text-sm text-gray-700 dark:text-gray-300 truncate">

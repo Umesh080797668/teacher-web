@@ -10,7 +10,7 @@ import type { Class, Student, Attendance, Payment, Teacher } from '@/lib/types';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
-  const { user, userType, isAuthenticated, logout } = useAuthStore();
+  const { user, userType, isAuthenticated, logout, session } = useAuthStore();
   const { theme } = useTheme();
   const [classes, setClasses] = useState<Class[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -36,6 +36,52 @@ export default function TeacherDashboardPage() {
 
   const teacher = user as Teacher;
   const teacherId = teacher?.teacherId;
+
+  // Poll for session status to detect disconnection from mobile app
+  useEffect(() => {
+    if (!isAuthenticated || userType !== 'teacher' || !session?.sessionId) {
+      return;
+    }
+
+    const checkSessionStatus = async () => {
+      try {
+        const response = await fetch('https://teacher-eight-chi.vercel.app/api/web-session/verify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ sessionId: session.sessionId }),
+        });
+
+        // If session is not found (404) or not valid, logout
+        if (response.status === 404) {
+          console.log('Session is no longer active, logging out...');
+          toast.error('Your session has been disconnected');
+          logout();
+          router.push('/login');
+          return;
+        }
+
+        const data = await response.json();
+        
+        // If session is not valid, logout
+        if (!data.valid) {
+          console.log('Session is no longer valid, logging out...');
+          toast.error('Your session has been disconnected');
+          logout();
+          router.push('/login');
+        }
+      } catch (error) {
+        console.error('Error checking session status:', error);
+        // On network error, don't logout - just log the error
+      }
+    };
+
+    // Check session status every 5 seconds
+    const intervalId = setInterval(checkSessionStatus, 5000);
+
+    return () => clearInterval(intervalId);
+  }, [isAuthenticated, userType, session, logout, router]);
 
   useEffect(() => {
     if (!isAuthenticated || userType !== 'teacher') {
