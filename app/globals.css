@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@theme {
+  --color-*: initial;
+  --breakpoint-*: initial;
+}
+
+/* Dark mode variant for Tailwind v4 */
+@variant dark (.dark &);
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
