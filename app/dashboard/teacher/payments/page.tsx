@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/store';
 import { paymentsApi, studentsApi, classesApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Payment, Student, Class, Teacher } from '@/lib/types';
+import Pagination from '@/lib/Pagination';
 
 export default function PaymentsPage() {
   const router = useRouter();
@@ -22,6 +23,13 @@ export default function PaymentsPage() {
     type: 'full' as 'full' | 'half' | 'free',
     month: new Date().getMonth() + 1,
   });
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAYMENTS_PER_PAGE = 10;
+
+  // Delete modal state
+  const [deletePaymentId, setDeletePaymentId] = useState<string | null>(null);
 
   const teacher = user as Teacher;
   const teacherId = teacher?.teacherId;
@@ -203,8 +211,8 @@ export default function PaymentsPage() {
             <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm mb-2" style={{ color: 'var(--foreground)', opacity: 0.9 }}>Total Revenue</p>
-                  <p className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>LKR {totalRevenue.toFixed(0)}</p>
+                  <p className="text-sm mb-2 text-white text-opacity-90">Total Revenue</p>
+                  <p className="text-3xl font-bold text-white">LKR {totalRevenue.toFixed(0)}</p>
                 </div>
                 <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                   <span className="text-2xl">💰</span>
@@ -214,8 +222,8 @@ export default function PaymentsPage() {
             <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm mb-2" style={{ color: 'var(--foreground)', opacity: 0.9 }}>Total Payments</p>
-                  <p className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>{payments.length}</p>
+                  <p className="text-sm mb-2 text-white text-opacity-90">Total Payments</p>
+                  <p className="text-3xl font-bold text-white">{payments.length}</p>
                 </div>
                 <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                   <span className="text-2xl">📝</span>
@@ -355,51 +363,88 @@ export default function PaymentsPage() {
               <p className="text-gray-600 dark:text-gray-400 mb-6">Record your first payment</p>
             </div>
           ) : (
-            payments.map((payment) => {
-              const student = students.find(s => s._id === payment.studentId);
-              const cls = classes.find(c => c._id === payment.classId);
+            <>
+              {payments
+                .slice((currentPage - 1) * PAYMENTS_PER_PAGE, currentPage * PAYMENTS_PER_PAGE)
+                .map((payment) => {
+                const student = students.find(s => s._id === payment.studentId);
+                const cls = classes.find(c => c._id === payment.classId);
 
-              return (
-                <div key={payment._id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4 hover:shadow-md transition">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-14 h-14 ${getPaymentTypeColor(payment.type)} rounded-xl flex items-center justify-center`}>
-                        <span className="text-2xl">{getPaymentTypeIcon(payment.type)}</span>
+                return (
+                  <div key={payment._id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-4 hover:shadow-md transition">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-14 h-14 ${getPaymentTypeColor(payment.type)} rounded-xl flex items-center justify-center`}>
+                          <span className="text-2xl">{getPaymentTypeIcon(payment.type)}</span>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-white">{student?.name || 'Unknown Student'}</h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {cls?.name || 'Unknown Class'} • {getPaymentTypeLabel(payment.type)}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                            {new Date(payment.createdAt || '').toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{student?.name || 'Unknown Student'}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {cls?.name || 'Unknown Class'} • {getPaymentTypeLabel(payment.type)}
-                        </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                          {new Date(payment.createdAt || '').toLocaleDateString()}
-                        </p>
+                      <div className="flex items-center space-x-4">
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">LKR {payment.amount.toFixed(2)}</p>
+                        </div>
+                        <button
+                          onClick={() => setDeletePaymentId(payment._id)}
+                          className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-lg transition"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">LKR {payment.amount.toFixed(2)}</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          if (confirm('Are you sure you want to delete this payment record?')) {
-                            handleDeletePayment(payment._id);
-                          }
-                        }}
-                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-700 rounded-lg transition"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
                     </div>
                   </div>
-                </div>
-              );
-            })
+                );
+              })}
+              
+              <Pagination
+                currentPage={currentPage}
+                totalItems={payments.length}
+                itemsPerPage={PAYMENTS_PER_PAGE}
+                onPageChange={setCurrentPage}
+              />
+            </>
           )}
         </div>
       </main>
+
+      {/* Delete Payment Modal */}
+      {deletePaymentId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 border dark:border-slate-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">Delete Payment</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
+              Are you sure you want to delete this payment record? This action cannot be undone.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setDeletePaymentId(null)}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (deletePaymentId) {
+                    handleDeletePayment(deletePaymentId);
+                  }
+                }}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -174,19 +174,19 @@ export default function ProfilePage() {
       />
 
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <button
               onClick={() => router.back()}
-              className="flex items-center text-gray-600 hover:text-gray-900"
+              className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Back
             </button>
-            <h1 className="text-xl font-bold text-gray-900">My Profile</h1>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">My Profile</h1>
             <div className="w-20"></div> {/* Spacer for centering */}
           </div>
         </div>
@@ -194,11 +194,11 @@ export default function ProfilePage() {
 
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
           {/* Profile Header */}
           <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-12 text-center">
             <div className="relative inline-block">
-              <div className="w-24 h-24 bg-white rounded-full shadow-lg overflow-hidden mx-auto mb-4">
+              <div className="w-24 h-24 bg-white dark:bg-gray-700 rounded-full shadow-lg overflow-hidden mx-auto mb-4">
                 {profileImage ? (
                   <img 
                     src={profileImage} 
@@ -216,7 +216,7 @@ export default function ProfilePage() {
               {isEditing && (
                 <button
                   onClick={() => setShowImageOptions(!showImageOptions)}
-                  className="absolute bottom-4 right-1/2 translate-x-[calc(50%+2rem)] bg-white rounded-full p-2 shadow-lg hover:bg-gray-50 transition"
+                  className="absolute bottom-4 right-1/2 translate-x-[calc(50%+2rem)] bg-white dark:bg-gray-700 rounded-full p-2 shadow-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition"
                 >
                   <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -225,7 +225,7 @@ export default function ProfilePage() {
                 </button>
               )}
               {showImageOptions && (
-                <div className="absolute bottom-0 right-1/2 translate-x-[calc(50%+2rem)] translate-y-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-10 min-w-[180px]">
+                <div className="absolute bottom-0 right-1/2 translate-x-[calc(50%+2rem)] translate-y-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden z-10 min-w-[180px]">
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full text-left px-4 py-3 hover:bg-gray-50 flex items-center text-sm text-gray-700"
@@ -270,10 +270,10 @@ export default function ProfilePage() {
           <div className="p-6 space-y-6">
             {/* Account Information */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Information</h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Full Name {isEditing && <span className="text-red-500">*</span>}
                   </label>
                   {isEditing ? (
@@ -281,16 +281,16 @@ export default function ProfilePage() {
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="Enter your full name"
                     />
                   ) : (
-                    <p className="text-gray-900 py-2">{teacherData?.name || teacher?.name || '-'}</p>
+                    <p className="text-gray-900 dark:text-white py-2">{teacherData?.name || teacher?.name || '-'}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Email {isEditing && <span className="text-red-500">*</span>}
                   </label>
                   {isEditing ? (
@@ -298,36 +298,36 @@ export default function ProfilePage() {
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="Enter your email"
                     />
                   ) : (
-                    <p className="text-gray-900 py-2">{teacherData?.email || teacher?.email || '-'}</p>
+                    <p className="text-gray-900 dark:text-white py-2">{teacherData?.email || teacher?.email || '-'}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
                   {isEditing ? (
                     <input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       placeholder="Enter your phone number"
                     />
                   ) : (
-                    <p className="text-gray-900 py-2">{teacherData?.phone || teacher?.phone || '-'}</p>
+                    <p className="text-gray-900 dark:text-white py-2">{teacherData?.phone || teacher?.phone || '-'}</p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Teacher ID</label>
-                  <p className="text-gray-900 py-2 font-mono bg-gray-50 px-3 rounded-lg">{teacherData?.teacherId || teacher?.teacherId || '-'}</p>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teacher ID</label>
+                  <p className="text-gray-900 dark:text-white py-2 font-mono bg-gray-50 dark:bg-gray-700 px-3 rounded-lg">{teacherData?.teacherId || teacher?.teacherId || '-'}</p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                   <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
                     teacherData?.status === 'active' || teacher?.status === 'active'
                       ? 'bg-green-100 text-green-800' 
@@ -340,12 +340,12 @@ export default function ProfilePage() {
             </div>
 
             {/* Account Details */}
-            <div className="pt-6 border-t border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Details</h3>
+            <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Account Created</p>
-                  <p className="text-gray-900 font-medium">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Account Created</p>
+                  <p className="text-gray-900 dark:text-white font-medium">
                     {teacherData?.createdAt 
                       ? new Date(teacherData.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
@@ -355,9 +355,9 @@ export default function ProfilePage() {
                       : '-'}
                   </p>
                 </div>
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Last Updated</p>
-                  <p className="text-gray-900 font-medium">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Last Updated</p>
+                  <p className="text-gray-900 dark:text-white font-medium">
                     {teacherData?.updatedAt 
                       ? new Date(teacherData.updatedAt).toLocaleDateString('en-US', {
                           year: 'numeric',
@@ -377,7 +377,7 @@ export default function ProfilePage() {
                   <button
                     onClick={handleCancel}
                     disabled={isLoading}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50"
                   >
                     Cancel
                   </button>

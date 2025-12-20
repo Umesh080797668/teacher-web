@@ -27,6 +27,10 @@ function ClassDetailsContent() {
     studentId: '',
   });
 
+  // Delete modal state
+  const [deleteStudentId, setDeleteStudentId] = useState<string | null>(null);
+  const [deleteStudentName, setDeleteStudentName] = useState<string>('');
+
   // Pagination state
   const [studentsCurrentPage, setStudentsCurrentPage] = useState(1);
   const STUDENTS_PER_PAGE = 10;
@@ -145,13 +149,13 @@ function ClassDetailsContent() {
     }
   };
 
-  const handleDeleteStudent = async (studentId: string, studentName: string) => {
-    if (!confirm(`Are you sure you want to delete ${studentName}?`)) return;
-
+  const handleDeleteStudent = async (studentId: string) => {
     try {
       await studentsApi.delete(studentId);
       toast.success('Student deleted successfully');
       loadClassData();
+      setDeleteStudentId(null);
+      setDeleteStudentName('');
     } catch (error: any) {
       console.error('Error deleting student:', error);
       toast.error(error.response?.data?.error || 'Failed to delete student');
@@ -328,7 +332,10 @@ function ClassDetailsContent() {
                         </div>
                       </div>
                       <button
-                        onClick={() => handleDeleteStudent(student._id, student.name)}
+                        onClick={() => {
+                          setDeleteStudentId(student._id);
+                          setDeleteStudentName(student.name);
+                        }}
                         className="ml-4 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-600 rounded-lg transition"
                         title="Delete student"
                       >
@@ -492,6 +499,35 @@ function ClassDetailsContent() {
                 className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition"
               >
                 Add Student
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Student Modal */}
+      {deleteStudentId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 border dark:border-slate-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">Delete Student</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
+              Are you sure you want to delete <strong>{deleteStudentName}</strong>? This will also delete all attendance records. This action cannot be undone.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setDeleteStudentId(null);
+                  setDeleteStudentName('');
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteStudent(deleteStudentId)}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Delete
               </button>
             </div>
           </div>

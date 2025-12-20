@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/store';
 import { attendanceApi, studentsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Attendance, Student, Teacher } from '@/lib/types';
+import Pagination from '@/lib/Pagination';
 
 export default function AttendanceViewPage() {
   const router = useRouter();
@@ -17,6 +18,10 @@ export default function AttendanceViewPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showChart, setShowChart] = useState(true);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const ATTENDANCE_PER_PAGE = 10;
+
   const teacher = user as Teacher;
   const teacherId = teacher?.teacherId;
 
@@ -26,6 +31,7 @@ export default function AttendanceViewPage() {
       return;
     }
     loadData();
+    setCurrentPage(1); // Reset to first page when filters change
   }, [isAuthenticated, userType, router, selectedMonth, selectedYear]);
 
   const loadData = async () => {
@@ -254,46 +260,57 @@ export default function AttendanceViewPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {attendance.map((record) => {
-                const student = students.find(s => s._id === record.studentId);
-                
-                return (
-                  <div key={record._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        record.status === 'present' ? 'bg-green-100 dark:bg-green-900/20' :
-                        record.status === 'absent' ? 'bg-red-100 dark:bg-red-900/20' :
-                        'bg-orange-100 dark:bg-orange-900/20'
-                      }`}>
-                        <span className={`text-lg ${
-                          record.status === 'present' ? 'text-green-600 dark:text-green-400' :
-                          record.status === 'absent' ? 'text-red-600 dark:text-red-400' :
-                          'text-orange-600 dark:text-orange-400'
-                        }`}>
-                          {getStatusIcon(record.status)}
-                        </span>
+            <>
+              <div className="space-y-3">
+                {attendance
+                  .slice((currentPage - 1) * ATTENDANCE_PER_PAGE, currentPage * ATTENDANCE_PER_PAGE)
+                  .map((record) => {
+                    const student = students.find(s => s._id === record.studentId);
+                    
+                    return (
+                      <div key={record._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                            record.status === 'present' ? 'bg-green-100 dark:bg-green-900/20' :
+                            record.status === 'absent' ? 'bg-red-100 dark:bg-red-900/20' :
+                            'bg-orange-100 dark:bg-orange-900/20'
+                          }`}>
+                            <span className={`text-lg ${
+                              record.status === 'present' ? 'text-green-600 dark:text-green-400' :
+                              record.status === 'absent' ? 'text-red-600 dark:text-red-400' :
+                              'text-orange-600 dark:text-orange-400'
+                            }`}>
+                              {getStatusIcon(record.status)}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-white">{student?.name || 'Unknown Student'}</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">ID: {student?.studentId || 'N/A'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                              {new Date(record.date).toLocaleDateString('en-US', { 
+                                weekday: 'long', 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className={`px-4 py-2 rounded-lg border-2 font-semibold ${getStatusColor(record.status)}`}>
+                          {record.status.toUpperCase()}
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-gray-900 dark:text-white">{student?.name || 'Unknown Student'}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">ID: {student?.studentId || 'N/A'}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                          {new Date(record.date).toLocaleDateString('en-US', { 
-                            weekday: 'long', 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className={`px-4 py-2 rounded-lg border-2 font-semibold ${getStatusColor(record.status)}`}>
-                      {record.status.toUpperCase()}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+              </div>
+              
+              <Pagination
+                currentPage={currentPage}
+                totalItems={attendance.length}
+                itemsPerPage={ATTENDANCE_PER_PAGE}
+                onPageChange={setCurrentPage}
+              />
+            </>
           )}
         </div>
       </main>

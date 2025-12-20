@@ -6,6 +6,7 @@ import { useAuthStore } from '@/lib/store';
 import { attendanceApi, studentsApi, classesApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Attendance, Student, Class, Teacher } from '@/lib/types';
+import Pagination from '@/lib/Pagination';
 
 interface StudentReport {
   studentId: string;
@@ -33,9 +34,14 @@ export default function ReportsPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'summary' | 'students' | 'monthly'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'students' | 'monthly' | 'daily'>('summary');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Pagination states
+  const [studentsReportsCurrentPage, setStudentsReportsCurrentPage] = useState(1);
+  const STUDENTS_REPORTS_PER_PAGE = 10;
 
   const teacher = user as Teacher;
   const teacherId = teacher?.teacherId;
@@ -46,6 +52,7 @@ export default function ReportsPage() {
       return;
     }
     loadData();
+    setStudentsReportsCurrentPage(1); // Reset to first page when filters change
   }, [isAuthenticated, userType, router, selectedMonth, selectedYear]);
 
   const loadData = async () => {
@@ -171,7 +178,8 @@ export default function ReportsPage() {
             {[
               { id: 'summary', name: 'Attendance Summary', icon: '📊' },
               { id: 'students', name: 'Student Reports', icon: '👨‍🎓' },
-              { id: 'monthly', name: 'Monthly Stats', icon: '📅' },
+              { id: 'daily', name: 'Daily View', icon: '📅' },
+              { id: 'monthly', name: 'Monthly Stats', icon: '�' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -336,7 +344,9 @@ export default function ReportsPage() {
             </div>
 
             <div className="space-y-4">
-              {studentReports.map((report) => (
+              {studentReports
+                .slice((studentsReportsCurrentPage - 1) * STUDENTS_REPORTS_PER_PAGE, studentsReportsCurrentPage * STUDENTS_REPORTS_PER_PAGE)
+                .map((report) => (
                 <div key={report.studentId} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{report.studentName}</h4>
@@ -369,6 +379,221 @@ export default function ReportsPage() {
                 </div>
               ))}
             </div>
+
+            {studentReports.length > STUDENTS_REPORTS_PER_PAGE && (
+              <Pagination
+                currentPage={studentsReportsCurrentPage}
+                totalItems={studentReports.length}
+                itemsPerPage={STUDENTS_REPORTS_PER_PAGE}
+                onPageChange={setStudentsReportsCurrentPage}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Daily View Tab */}
+        {activeTab === 'daily' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Daily Attendance View</h2>
+              <div className="flex items-center space-x-4">
+                <input
+                  type="date"
+                  value={selectedDate.toISOString().split('T')[0]}
+                  onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                />
+              </div>
+            </div>
+
+            {/* Date Info Card */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm opacity-90">Selected Date</p>
+                  <h3 className="text-2xl font-bold mt-1">
+                    {selectedDate.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </h3>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm opacity-90">Day of Year</p>
+                  <h3 className="text-2xl font-bold mt-1">
+                    Day {Math.floor((selectedDate.getTime() - new Date(selectedDate.getFullYear(), 0, 0).getTime()) / 86400000)}
+                  </h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Daily Statistics */}
+            {(() => {
+              const selectedDateStr = selectedDate.toDateString();
+              const dayAttendance = attendance.filter(a => new Date(a.date).toDateString() === selectedDateStr);
+              const presentCount = dayAttendance.filter(a => a.status === 'present').length;
+              const absentCount = dayAttendance.filter(a => a.status === 'absent').length;
+              const lateCount = dayAttendance.filter(a => a.status === 'late').length;
+              const totalRecorded = dayAttendance.length;
+              const attendanceRate = totalRecorded > 0 ? (presentCount / totalRecorded) * 100 : 0;
+
+              return (
+                <>
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
+                          <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{students.length}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-blue-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl">👥</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Present</p>
+                          <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{presentCount}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-green-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl">✅</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Absent</p>
+                          <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{absentCount}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-red-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl">❌</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Late</p>
+                          <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">{lateCount}</p>
+                        </div>
+                        <div className="w-12 h-12 bg-orange-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl">⏰</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Attendance Rate</p>
+                          <p className={`text-3xl font-bold mt-2 ${
+                            attendanceRate >= 75 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
+                          }`}>
+                            {attendanceRate.toFixed(0)}%
+                          </p>
+                        </div>
+                        <div className="w-12 h-12 bg-indigo-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                          <span className="text-2xl">📊</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Students List by Class */}
+                  <div className="space-y-6">
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">Students Attendance</h3>
+                    
+                    {classes.map(cls => {
+                      const classStudents = students.filter(s => s.classId === cls._id);
+                      
+                      return (
+                        <div key={cls._id} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+                          <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-lg font-semibold text-white">{cls.name}</h4>
+                              <span className="px-3 py-1 bg-white bg-opacity-20 text-white rounded-full text-sm font-medium">
+                                {classStudents.length} Students
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="p-6">
+                            {classStudents.length === 0 ? (
+                              <div className="text-center py-8">
+                                <p className="text-gray-500 dark:text-gray-400">No students in this class</p>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {classStudents.map(student => {
+                                  const studentAttendance = dayAttendance.find(a => a.studentId === student._id);
+                                  const status = studentAttendance?.status || 'not-recorded';
+                                  
+                                  let statusColor = 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-400';
+                                  let statusIcon = '❓';
+                                  let statusText = 'Not Recorded';
+                                  
+                                  if (status === 'present') {
+                                    statusColor = 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800';
+                                    statusIcon = '✅';
+                                    statusText = 'Present';
+                                  } else if (status === 'absent') {
+                                    statusColor = 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800';
+                                    statusIcon = '❌';
+                                    statusText = 'Absent';
+                                  } else if (status === 'late') {
+                                    statusColor = 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800';
+                                    statusIcon = '⏰';
+                                    statusText = 'Late';
+                                  }
+                                  
+                                  return (
+                                    <div 
+                                      key={student._id}
+                                      className={`border-2 rounded-lg p-4 transition-all hover:shadow-md ${statusColor}`}
+                                    >
+                                      <div className="flex items-center justify-between mb-2">
+                                        <p className="font-semibold text-sm truncate flex-1">{student.name}</p>
+                                        <span className="text-2xl ml-2">{statusIcon}</span>
+                                      </div>
+                                      <div className="flex items-center justify-between">
+                                        <p className="text-xs opacity-75">ID: {student.studentId}</p>
+                                        <span className="text-xs font-medium">{statusText}</span>
+                                      </div>
+                                      {studentAttendance?.session && (
+                                        <p className="text-xs opacity-75 mt-1">Session: {studentAttendance.session}</p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {classes.length === 0 && (
+                      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-12 text-center">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <span className="text-3xl">📚</span>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No classes found</h3>
+                        <p className="text-gray-600 dark:text-gray-400">Create a class to start tracking attendance</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
 
