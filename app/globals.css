@@ -1,13 +1,5 @@
 @import "tailwindcss";
 
-@theme {
-  --color-*: initial;
-  --breakpoint-*: initial;
-}
-
-/* Dark mode variant for Tailwind v4 */
-@variant dark (.dark &);
-
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -78,4 +70,377 @@ select {
 [data-theme="dark"] .card {
   background-color: var(--card-bg);
   border-color: var(--border-color);
+}
+
+/* =================================================================
+   TAILWIND DARK MODE SUPPORT - Teacher & Admin Pages
+   ================================================================= */
+
+/* Enable Tailwind dark mode based on data-theme attribute */
+.dark,
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* Dark mode text colors */
+[data-theme="dark"] .dark\:text-white {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .dark\:text-gray-100 {
+  color: #f3f4f6;
+}
+
+[data-theme="dark"] .dark\:text-gray-200 {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .dark\:text-gray-300 {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .dark\:text-gray-400 {
+  color: #9ca3af;
+}
+
+[data-theme="dark"] .dark\:text-gray-500 {
+  color: #6b7280;
+}
+
+[data-theme="dark"] .dark\:text-gray-600 {
+  color: #4b5563;
+}
+
+[data-theme="dark"] .dark\:text-gray-700 {
+  color: #374151;
+}
+
+[data-theme="dark"] .dark\:text-indigo-400 {
+  color: #818cf8;
+}
+
+[data-theme="dark"] .dark\:text-indigo-500 {
+  color: #6366f1;
+}
+
+[data-theme="dark"] .dark\:text-red-400 {
+  color: #f87171;
+}
+
+[data-theme="dark"] .dark\:text-red-500 {
+  color: #ef4444;
+}
+
+[data-theme="dark"] .dark\:text-green-400 {
+  color: #4ade80;
+}
+
+[data-theme="dark"] .dark\:text-blue-400 {
+  color: #60a5fa;
+}
+
+[data-theme="dark"] .dark\:text-yellow-400 {
+  color: #facc15;
+}
+
+/* Dark mode background colors */
+[data-theme="dark"] .dark\:bg-gray-900 {
+  background-color: #111827;
+}
+
+[data-theme="dark"] .dark\:bg-gray-800 {
+  background-color: #1f2937;
+}
+
+[data-theme="dark"] .dark\:bg-gray-700 {
+  background-color: #374151;
+}
+
+[data-theme="dark"] .dark\:bg-gray-600 {
+  background-color: #4b5563;
+}
+
+[data-theme="dark"] .dark\:bg-gray-500 {
+  background-color: #6b7280;
+}
+
+[data-theme="dark"] .dark\:bg-indigo-900 {
+  background-color: #312e81;
+}
+
+[data-theme="dark"] .dark\:bg-indigo-800 {
+  background-color: #3730a3;
+}
+
+[data-theme="dark"] .dark\:bg-red-900 {
+  background-color: #7f1d1d;
+}
+
+[data-theme="dark"] .dark\:bg-green-900 {
+  background-color: #14532d;
+}
+
+/* Dark mode border colors */
+[data-theme="dark"] .dark\:border-gray-700 {
+  border-color: #374151;
+}
+
+[data-theme="dark"] .dark\:border-gray-600 {
+  border-color: #4b5563;
+}
+
+[data-theme="dark"] .dark\:border-gray-500 {
+  border-color: #6b7280;
+}
+
+[data-theme="dark"] .dark\:border-indigo-500 {
+  border-color: #6366f1;
+}
+
+/* Dark mode hover states */
+[data-theme="dark"] .dark\:hover\:bg-gray-700:hover {
+  background-color: #374151;
+}
+
+[data-theme="dark"] .dark\:hover\:bg-gray-600:hover {
+  background-color: #4b5563;
+}
+
+[data-theme="dark"] .dark\:hover\:bg-gray-500:hover {
+  background-color: #6b7280;
+}
+
+[data-theme="dark"] .dark\:hover\:bg-indigo-700:hover {
+  background-color: #4338ca;
+}
+
+[data-theme="dark"] .dark\:hover\:text-white:hover {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .dark\:hover\:text-gray-300:hover {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .dark\:hover\:text-gray-200:hover {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .dark\:hover\:text-red-300:hover {
+  color: #fca5a5;
+}
+
+[data-theme="dark"] .dark\:hover\:border-gray-600:hover {
+  border-color: #4b5563;
+}
+
+[data-theme="dark"] .dark\:hover\:border-gray-500:hover {
+  border-color: #6b7280;
+}
+
+/* Dark mode focus states */
+[data-theme="dark"] .dark\:focus\:ring-indigo-500:focus {
+  --tw-ring-color: #6366f1;
+}
+
+[data-theme="dark"] .dark\:focus\:border-indigo-500:focus {
+  border-color: #6366f1;
+}
+
+/* Dark mode ring colors */
+[data-theme="dark"] .dark\:ring-gray-700 {
+  --tw-ring-color: #374151;
+}
+
+/* Dark mode divide colors */
+[data-theme="dark"] .dark\:divide-gray-700 > * + * {
+  border-color: #374151;
+}
+
+[data-theme="dark"] .dark\:divide-gray-600 > * + * {
+  border-color: #4b5563;
+}
+
+/* Table dark mode support */
+[data-theme="dark"] table {
+  color: var(--foreground);
+}
+
+[data-theme="dark"] th {
+  background-color: #1f2937;
+  color: #e5e7eb;
+  border-color: #374151;
+}
+
+[data-theme="dark"] td {
+  border-color: #374151;
+}
+
+[data-theme="dark"] tr:hover {
+  background-color: #1f2937;
+}
+
+/* Button dark mode support */
+[data-theme="dark"] button:not(.bg-indigo-600):not(.bg-red-600):not(.bg-green-600) {
+  background-color: #374151;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+[data-theme="dark"] button:not(.bg-indigo-600):not(.bg-red-600):not(.bg-green-600):hover {
+  background-color: #4b5563;
+}
+
+/* Link dark mode support */
+[data-theme="dark"] a:not(.bg-indigo-600):not(.text-indigo-600) {
+  color: #818cf8;
+}
+
+[data-theme="dark"] a:not(.bg-indigo-600):not(.text-indigo-600):hover {
+  color: #a5b4fc;
+}
+
+/* Form elements dark mode support */
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="time"],
+[data-theme="dark"] input[type="search"] {
+  background-color: #1f2937;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="email"]:focus,
+[data-theme="dark"] input[type="password"]:focus,
+[data-theme="dark"] input[type="number"]:focus,
+[data-theme="dark"] input[type="date"]:focus,
+[data-theme="dark"] input[type="time"]:focus,
+[data-theme="dark"] input[type="search"]:focus {
+  border-color: #6366f1;
+  --tw-ring-color: #6366f1;
+}
+
+/* Select dropdown dark mode */
+[data-theme="dark"] select {
+  background-color: #1f2937;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] select option {
+  background-color: #1f2937;
+  color: #e5e7eb;
+}
+
+/* Textarea dark mode */
+[data-theme="dark"] textarea {
+  background-color: #1f2937;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+/* Badge dark mode support */
+[data-theme="dark"] .badge {
+  background-color: #374151;
+  color: #e5e7eb;
+}
+
+/* Alert/Toast dark mode support */
+[data-theme="dark"] .alert,
+[data-theme="dark"] .toast {
+  background-color: #1f2937;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+/* Scrollbar dark mode (for webkit browsers) */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 6px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Shadow adjustments for dark mode */
+[data-theme="dark"] .shadow,
+[data-theme="dark"] .shadow-sm,
+[data-theme="dark"] .shadow-md,
+[data-theme="dark"] .shadow-lg {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Ensure proper contrast for teacher pages */
+[data-theme="dark"] .teacher-dashboard,
+[data-theme="dark"] .teacher-page {
+  background-color: #111827;
+  color: #e5e7eb;
+}
+
+/* Stats cards in dark mode */
+[data-theme="dark"] .stat-card {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+/* Navigation dark mode */
+[data-theme="dark"] nav {
+  background-color: #1f2937;
+  border-color: #374151;
+}
+
+[data-theme="dark"] nav a {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] nav a:hover,
+[data-theme="dark"] nav a.active {
+  color: #ffffff;
+  background-color: #374151;
+}
+
+/* Dropdown menus in dark mode */
+[data-theme="dark"] .dropdown-menu,
+[data-theme="dark"] [role="menu"] {
+  background-color: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .dropdown-item,
+[data-theme="dark"] [role="menuitem"] {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] [role="menuitem"]:hover {
+  background-color: #374151;
+}
+
+/* Loading spinner in dark mode */
+[data-theme="dark"] .spinner,
+[data-theme="dark"] .loading {
+  border-color: #4b5563;
+  border-top-color: #6366f1;
+}
+
+/* Ensure smooth transitions */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
