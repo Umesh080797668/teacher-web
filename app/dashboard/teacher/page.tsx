@@ -37,45 +37,8 @@ export default function TeacherDashboardPage() {
   const teacher = user as Teacher;
   const teacherId = teacher?.teacherId;
 
-  // Poll for session status to detect disconnection from mobile app
-  useEffect(() => {
-    if (!isAuthenticated || userType !== 'teacher' || !session?.sessionId) {
-      return;
-    }
-
-    const checkSessionStatus = async () => {
-      try {
-        // Use the proper API method instead of direct fetch
-        const response = await sessionApi.verifySession(session.sessionId);
-
-        // If session verification fails or session is not valid
-        if (!response.data || !response.data.valid) {
-          console.log('Session is no longer valid, logging out...');
-          toast.error('Your session has been disconnected');
-          logout();
-          router.push('/login');
-        }
-      } catch (error: any) {
-        // Handle API errors gracefully
-        if (error.response?.status === 404) {
-          console.log('Session verification endpoint not available, but session may still be active');
-          // Don't show error toast for 404 - this is expected when backend is not available
-        } else if (error.response?.status === 401) {
-          console.log('Session unauthorized, logging out...');
-          toast.error('Your session has expired');
-          logout();
-          router.push('/login');
-        } else {
-          // Network error or other issues - don't show to user, just log
-          console.log('Session verification network error (expected when backend unavailable)');
-        }
-        // On any error, don't logout - just continue polling
-      }
-    };    // Check session status every 5 seconds
-    const intervalId = setInterval(checkSessionStatus, 5000);
-
-    return () => clearInterval(intervalId);
-  }, [isAuthenticated, userType, session, logout, router]);
+  // Note: Session polling removed - web sessions should remain independent of mobile app disconnection
+  // Web sessions are managed separately and should only expire based on their own timeout/validity
 
   useEffect(() => {
     if (!isAuthenticated || userType !== 'teacher') {
