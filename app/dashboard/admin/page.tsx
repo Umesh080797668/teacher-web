@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useAuthStore } from '@/lib/store';
 import { teachersApi, sessionApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { io, Socket } from 'socket.io-client';
+// import { io, Socket } from 'socket.io-client'; // Disabled - Vercel doesn't support Socket.IO
 import type { Teacher, AdminUser, TeacherSession, ActiveTeacherData, TeacherDetailedData } from '@/lib/types';
 
 export default function AdminDashboardPage() {
@@ -31,7 +31,7 @@ export default function AdminDashboardPage() {
     password: '',
   });
   const qrCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  // const socketRef = useRef<Socket | null>(null); // Disabled - Socket.IO not supported on Vercel
 
   const adminUser = user as AdminUser;
   const companyId = adminUser?._id;
@@ -46,10 +46,14 @@ export default function AdminDashboardPage() {
     
     loadData();
     
-    // Setup real-time socket connection with HTTP polling for Vercel compatibility
+    // NOTE: Socket.IO disabled - Vercel serverless doesn't support persistent connections
+    // Socket.IO requires a persistent server (Railway, Render, Heroku, or VPS)
+    // Real-time updates are disabled. Use auto-refresh feature in preferences instead.
+    
+    /* Socket.IO code commented out - doesn't work on Vercel serverless
     const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004', {
-      transports: ['polling'], // Use only HTTP polling (Vercel doesn't support WebSocket)
-      upgrade: false, // Prevent upgrade to WebSocket
+      transports: ['polling'],
+      upgrade: false,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -57,11 +61,10 @@ export default function AdminDashboardPage() {
     
     socketRef.current = socket;
     
-    // Listen for session disconnect events
     socket.on('session-disconnected', (data: { sessionId: string }) => {
       console.log('Session disconnected:', data.sessionId);
       toast.success('Teacher session ended');
-      loadData(); // Refresh data to update active sessions count
+      loadData();
     });
     
     socket.on('connect', () => {
@@ -71,13 +74,16 @@ export default function AdminDashboardPage() {
     socket.on('disconnect', () => {
       console.log('Disconnected from real-time updates');
     });
+    */
     
     // Cleanup on unmount
     return () => {
+      /* Socket.IO cleanup disabled
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
       }
+      */
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, userType, router, isHydrated]);
