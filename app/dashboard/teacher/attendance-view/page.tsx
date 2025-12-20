@@ -206,50 +206,50 @@ export default function AttendanceViewPage() {
 
         {/* Chart View */}
         {showChart && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Attendance Overview</h3>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">Attendance Overview</h3>
             <div className="h-64 flex items-end justify-center space-x-8">
               <div className="flex flex-col items-center">
                 <div 
                   className="w-24 bg-green-500 rounded-t-lg transition-all duration-500"
                   style={{ height: `${totalStats > 0 ? (stats.present / totalStats) * 200 : 0}px` }}
                 ></div>
-                <p className="mt-4 font-semibold text-gray-700">Present</p>
-                <p className="text-sm text-gray-500">{stats.present}</p>
+                <p className="mt-4 font-semibold text-gray-700 dark:text-gray-300">Present</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{stats.present}</p>
               </div>
               <div className="flex flex-col items-center">
                 <div 
                   className="w-24 bg-red-500 rounded-t-lg transition-all duration-500"
                   style={{ height: `${totalStats > 0 ? (stats.absent / totalStats) * 200 : 0}px` }}
                 ></div>
-                <p className="mt-4 font-semibold text-gray-700">Absent</p>
-                <p className="text-sm text-gray-500">{stats.absent}</p>
+                <p className="mt-4 font-semibold text-gray-700 dark:text-gray-300">Absent</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{stats.absent}</p>
               </div>
               <div className="flex flex-col items-center">
                 <div 
                   className="w-24 bg-orange-500 rounded-t-lg transition-all duration-500"
                   style={{ height: `${totalStats > 0 ? (stats.late / totalStats) * 200 : 0}px` }}
                 ></div>
-                <p className="mt-4 font-semibold text-gray-700">Late</p>
-                <p className="text-sm text-gray-500">{stats.late}</p>
+                <p className="mt-4 font-semibold text-gray-700 dark:text-gray-300">Late</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{stats.late}</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Attendance Records */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
             Attendance Records ({attendance.length})
           </h3>
 
           {attendance.length === 0 ? (
             <div className="text-center py-12">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-3xl">📊</span>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No attendance records</h3>
-              <p className="text-gray-600">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No attendance records</h3>
+              <p className="text-gray-600 dark:text-gray-400">
                 Records for {monthNames[selectedMonth - 1]} {selectedYear}
               </p>
             </div>
@@ -259,25 +259,25 @@ export default function AttendanceViewPage() {
                 const student = students.find(s => s._id === record.studentId);
                 
                 return (
-                  <div key={record._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                  <div key={record._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition">
                     <div className="flex items-center space-x-4">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        record.status === 'present' ? 'bg-green-100' :
-                        record.status === 'absent' ? 'bg-red-100' :
-                        'bg-orange-100'
+                        record.status === 'present' ? 'bg-green-100 dark:bg-green-900/20' :
+                        record.status === 'absent' ? 'bg-red-100 dark:bg-red-900/20' :
+                        'bg-orange-100 dark:bg-orange-900/20'
                       }`}>
                         <span className={`text-lg ${
-                          record.status === 'present' ? 'text-green-600' :
-                          record.status === 'absent' ? 'text-red-600' :
-                          'text-orange-600'
+                          record.status === 'present' ? 'text-green-600 dark:text-green-400' :
+                          record.status === 'absent' ? 'text-red-600 dark:text-red-400' :
+                          'text-orange-600 dark:text-orange-400'
                         }`}>
                           {getStatusIcon(record.status)}
                         </span>
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900">{student?.name || 'Unknown Student'}</p>
-                        <p className="text-sm text-gray-600">ID: {student?.studentId || 'N/A'}</p>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="font-semibold text-gray-900 dark:text-white">{student?.name || 'Unknown Student'}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">ID: {student?.studentId || 'N/A'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                           {new Date(record.date).toLocaleDateString('en-US', { 
                             weekday: 'long', 
                             year: 'numeric', 
