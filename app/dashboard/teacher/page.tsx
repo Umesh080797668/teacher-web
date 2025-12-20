@@ -360,73 +360,73 @@ export default function TeacherDashboardPage() {
             {/* Stats Grid - Enhanced Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {/* Total Students Card */}
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                   </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
                     +0
                   </span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 mb-1">{students.length}</p>
-                <p className="text-sm text-gray-600">Total Students</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{students.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Students</p>
               </div>
 
               {/* Today's Attendance Card */}
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-teal-100 dark:bg-teal-900/30 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
                     0%
                   </span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 mb-1">0%</p>
-                <p className="text-sm text-gray-600">Today's Attendance</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">0%</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Today's Attendance</p>
               </div>
 
               {/* Total Classes Card */}
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                     </svg>
                   </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
                     +0
                   </span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 mb-1">{classes.length}</p>
-                <p className="text-sm text-gray-600">Total Classes</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{classes.length}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Total Classes</p>
               </div>
 
               {/* Payment Status Card */}
-              <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200 hover:shadow-md transition">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700 hover:shadow-md transition">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
-                    <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
+                    <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
                   </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                  <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
                     0%
                   </span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 mb-1">0%</p>
-                <p className="text-sm text-gray-600">Payment Status</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">0%</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Payment Status</p>
               </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <button
                   onClick={() => setActiveTab('attendance')}
@@ -467,21 +467,21 @@ export default function TeacherDashboardPage() {
             </div>
 
             {/* My Classes */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">My Classes</h2>
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">My Classes</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {classes.map((cls) => {
                   const classStudents = getClassStudents(cls._id);
                   return (
-                    <div key={cls._id} className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border border-indigo-100 hover:shadow-md transition cursor-pointer"
+                    <div key={cls._id} className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-lg border border-indigo-100 dark:border-indigo-800 hover:shadow-md transition cursor-pointer"
                       onClick={() => router.push(`/dashboard/teacher/classes/details?id=${cls._id}`)}>
-                      <h3 className="font-semibold text-gray-900 mb-2">{cls.name}</h3>
-                      <p className="text-sm text-gray-600">{classStudents.length} students</p>
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-2">{cls.name}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{classStudents.length} students</p>
                     </div>
                   );
                 })}
                 {classes.length === 0 && (
-                  <div className="col-span-3 text-center py-8 text-gray-500">
+                  <div className="col-span-3 text-center py-8 text-gray-500 dark:text-gray-400">
                     No classes yet. Create your first class!
                   </div>
                 )}
@@ -507,14 +507,14 @@ export default function TeacherDashboardPage() {
               {classes.map((cls) => {
                 const classStudents = getClassStudents(cls._id);
                 return (
-                  <div key={cls._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition group">
+                  <div key={cls._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition group">
                     <div className="flex items-start justify-between mb-4">
                       <div 
                         className="flex-1 cursor-pointer"
                         onClick={() => router.push(`/dashboard/teacher/classes/details?id=${cls._id}`)}
                       >
-                        <h3 className="font-semibold text-lg text-gray-900 group-hover:text-indigo-600 transition">{cls.name}</h3>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <h3 className="font-semibold text-lg text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">{cls.name}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                           Created {new Date(cls.createdAt || '').toLocaleDateString()}
                         </p>
                       </div>
@@ -523,7 +523,7 @@ export default function TeacherDashboardPage() {
                           e.stopPropagation();
                           setDeleteClassId(cls._id);
                         }}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                         title="Delete class"
                       >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -532,22 +532,22 @@ export default function TeacherDashboardPage() {
                       </button>
                     </div>
 
-                    <div className="pt-4 border-t border-gray-100">
+                    <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm text-gray-600">Students</span>
-                        <span className="text-2xl font-bold text-gray-900">{classStudents.length}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Students</span>
+                        <span className="text-2xl font-bold text-gray-900 dark:text-white">{classStudents.length}</span>
                       </div>
                       
                       {classStudents.length > 0 && (
                         <div className="space-y-1 max-h-32 overflow-y-auto">
                           {classStudents.slice(0, 5).map((student) => (
-                            <div key={student._id} className="text-sm text-gray-600 flex items-center">
+                            <div key={student._id} className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
                               <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
                               {student.name}
                             </div>
                           ))}
                           {classStudents.length > 5 && (
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
                               +{classStudents.length - 5} more
                             </p>
                           )}
@@ -557,7 +557,7 @@ export default function TeacherDashboardPage() {
 
                     <button
                       onClick={() => router.push(`/dashboard/teacher/classes/details?id=${cls._id}`)}
-                      className="w-full mt-4 px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition"
+                      className="w-full mt-4 px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition"
                     >
                       View Details
                     </button>
@@ -587,15 +587,15 @@ export default function TeacherDashboardPage() {
             </div>
 
             {/* Class Filter */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Class</label>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Class</label>
               <select
                 value={selectedClass?._id || ''}
                 onChange={(e) => {
                   const cls = classes.find(c => c._id === e.target.value);
                   setSelectedClass(cls || null);
                 }}
-                className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full md:w-64 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="">All Classes</option>
                 {classes.map((cls) => (
@@ -604,18 +604,18 @@ export default function TeacherDashboardPage() {
               </select>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Student ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Class</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {(selectedClass 
                     ? students.filter(s => s.classId === selectedClass._id)
                     : students
@@ -625,28 +625,28 @@ export default function TeacherDashboardPage() {
                     return (
                       <tr 
                         key={student._id} 
-                        className="hover:bg-gray-50 cursor-pointer"
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                         onClick={() => router.push(`/dashboard/teacher/students/details?id=${student._id}`)}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
-                              <span className="text-green-600 font-semibold text-sm">{student.name.charAt(0)}</span>
+                            <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mr-3">
+                              <span className="text-green-600 dark:text-green-400 font-semibold text-sm">{student.name.charAt(0)}</span>
                             </div>
-                            <div className="text-sm font-medium text-gray-900">{student.name}</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">{student.name}</div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="text-sm text-gray-900 font-mono">{student.studentId}</span>
+                          <span className="text-sm text-gray-900 dark:text-white font-mono">{student.studentId}</span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {studentClass && (
-                            <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400">
                               {studentClass.name}
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                           {student.email || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -655,7 +655,7 @@ export default function TeacherDashboardPage() {
                               e.stopPropagation();
                               setDeleteStudentId(student._id);
                             }}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                           >
                             Delete
                           </button>
@@ -698,15 +698,15 @@ export default function TeacherDashboardPage() {
                 </div>
 
                 {/* Class Selector Card */}
-                <div className="bg-white rounded-2xl p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl p-4">
                   <div className="flex items-center space-x-4">
                     <div className="flex-shrink-0">
-                      <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Select Class *</label>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Class *</label>
                       <select
                         value={selectedClass?._id || ''}
                         onChange={(e) => {
@@ -714,7 +714,7 @@ export default function TeacherDashboardPage() {
                           setSelectedClass(cls || null);
                           setAttendanceRecords({});
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                       >
                         <option value="">Select a class</option>
                         {classes.map((cls) => (
@@ -729,27 +729,27 @@ export default function TeacherDashboardPage() {
 
             {/* Summary Card */}
             {selectedClass && Object.keys(attendanceRecords).length > 0 && (
-              <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-2xl shadow-sm border border-green-200 p-6">
+              <div className="bg-gradient-to-br from-green-50 to-blue-50 dark:from-green-900/20 dark:to-blue-900/20 rounded-2xl shadow-sm border border-green-200 dark:border-green-800 p-6">
                 <div className="flex items-center justify-around">
                   <div className="text-center">
-                    <p className="text-3xl font-bold text-green-600">
+                    <p className="text-3xl font-bold text-green-600 dark:text-green-400">
                       {Object.values(attendanceRecords).filter(s => s === 'present').length}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">Present</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Present</p>
                   </div>
-                  <div className="w-px h-12 bg-gray-300"></div>
+                  <div className="w-px h-12 bg-gray-300 dark:bg-gray-600"></div>
                   <div className="text-center">
-                    <p className="text-3xl font-bold text-red-600">
+                    <p className="text-3xl font-bold text-red-600 dark:text-red-400">
                       {Object.values(attendanceRecords).filter(s => s === 'absent').length}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">Absent</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Absent</p>
                   </div>
-                  <div className="w-px h-12 bg-gray-300"></div>
+                  <div className="w-px h-12 bg-gray-300 dark:bg-gray-600"></div>
                   <div className="text-center">
-                    <p className="text-3xl font-bold text-orange-600">
+                    <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">
                       {Object.values(attendanceRecords).filter(s => s === 'late').length}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">Late</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Late</p>
                   </div>
                 </div>
               </div>
@@ -760,17 +760,17 @@ export default function TeacherDashboardPage() {
               <>
                 <div className="space-y-3">
                   {getClassStudents(selectedClass._id).map((student) => (
-                    <div key={student._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <div key={student._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                            <span className="text-indigo-600 font-semibold text-lg">
+                          <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center">
+                            <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
                               {student.name.charAt(0).toUpperCase()}
                             </span>
                           </div>
                           <div>
-                            <p className="font-semibold text-gray-900">{student.name}</p>
-                            <p className="text-sm text-gray-500">ID: {student.studentId}</p>
+                            <p className="font-semibold text-gray-900 dark:text-white">{student.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">ID: {student.studentId}</p>
                           </div>
                         </div>
 
@@ -836,14 +836,14 @@ export default function TeacherDashboardPage() {
                 )}
               </>
             ) : (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Select a Class</h3>
-                <p className="text-gray-600">Please select a class to mark attendance</p>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Select a Class</h3>
+                <p className="text-gray-600 dark:text-gray-400">Please select a class to mark attendance</p>
               </div>
             )}
           </div>
