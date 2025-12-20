@@ -28,6 +28,7 @@ export default function UnifiedDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const qrCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasExpandedTeacher = teachers.some(t => t.isExpanded);
 
   const adminUser = user as AdminUser;
   const companyId = adminUser?._id;
@@ -41,11 +42,15 @@ export default function UnifiedDashboard() {
     }
     loadActiveTeachers();
     
-    // Start polling based on preferences
-    if (preferences.autoRefresh) {
+    // Start polling based on preferences, but pause when teacher details are expanded
+    if (preferences.autoRefresh && !hasExpandedTeacher) {
       pollingRef.current = setInterval(() => {
         loadActiveTeachers();
       }, preferences.refreshInterval * 1000);
+    } else if (pollingRef.current && hasExpandedTeacher) {
+      // Stop polling when details are expanded
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
     }
 
     return () => {
@@ -57,7 +62,7 @@ export default function UnifiedDashboard() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, userType, router, preferences.autoRefresh, preferences.refreshInterval, isHydrated]);
+  }, [isAuthenticated, userType, router, preferences.autoRefresh, preferences.refreshInterval, isHydrated, hasExpandedTeacher]);
 
   const loadActiveTeachers = async () => {
     if (!companyId) return;
@@ -517,6 +522,38 @@ function TeacherCard({
       {/* Expanded Details */}
       {teacher.isExpanded && (
         <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900 space-y-4">
+          {/* Management Actions */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => window.open(`/dashboard/teacher/students?teacherId=${teacher.teacher.teacherId}`, '_blank')}
+              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <span>👥</span>
+              <span>Add Student</span>
+            </button>
+            <button
+              onClick={() => window.open(`/dashboard/teacher/classes?teacherId=${teacher.teacher.teacherId}`, '_blank')}
+              className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <span>📚</span>
+              <span>Add Class</span>
+            </button>
+            <button
+              onClick={() => window.open(`/dashboard/teacher/payments?teacherId=${teacher.teacher.teacherId}`, '_blank')}
+              className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <span>💰</span>
+              <span>Payments</span>
+            </button>
+            <button
+              onClick={() => window.open(`/dashboard/teacher/reports?teacherId=${teacher.teacher.teacherId}`, '_blank')}
+              className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <span>📊</span>
+              <span>Reports</span>
+            </button>
+          </div>
+
           {/* Students with Quick Attendance */}
           <div>
             <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Today's Attendance</h4>
@@ -643,6 +680,38 @@ function TeacherListItem({
 
       {teacher.isExpanded && (
         <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900">
+          {/* Management Actions */}
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            <button
+              onClick={() => window.open(`/dashboard/teacher/students?teacherId=${teacher.teacher.teacherId}`, '_blank')}
+              className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <span>👥</span>
+              <span>Add Student</span>
+            </button>
+            <button
+              onClick={() => window.open(`/dashboard/teacher/classes?teacherId=${teacher.teacher.teacherId}`, '_blank')}
+              className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <span>📚</span>
+              <span>Add Class</span>
+            </button>
+            <button
+              onClick={() => window.open(`/dashboard/teacher/payments?teacherId=${teacher.teacher.teacherId}`, '_blank')}
+              className="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <span>💰</span>
+              <span>Payments</span>
+            </button>
+            <button
+              onClick={() => window.open(`/dashboard/teacher/reports?teacherId=${teacher.teacher.teacherId}`, '_blank')}
+              className="px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <span>📊</span>
+              <span>Reports</span>
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Classes */}
             <div>
