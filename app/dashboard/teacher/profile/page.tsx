@@ -21,6 +21,7 @@ export default function ProfilePage() {
     email: '',
     phone: '',
   });
+  const [teacherData, setTeacherData] = useState<Teacher | null>(null);
 
   const teacher = user as Teacher;
 
@@ -30,19 +31,35 @@ export default function ProfilePage() {
       return;
     }
     
-    if (teacher) {
-      setFormData({
-        name: teacher.name || '',
-        email: teacher.email || '',
-        phone: teacher.phone || '',
-      });
-      // @ts-ignore - profilePicture might exist in teacher object
-      if (teacher.profilePicture) {
-        // @ts-ignore
-        setProfileImage(teacher.profilePicture);
-      }
+    // Fetch complete teacher data including timestamps
+    if (teacher?._id) {
+      loadTeacherProfile();
     }
   }, [isAuthenticated, userType, router, teacher]);
+
+  const loadTeacherProfile = async () => {
+    if (!teacher?._id) return;
+
+    try {
+      const response = await teachersApi.getById(teacher._id);
+      setTeacherData(response.data);
+      
+      setFormData({
+        name: response.data.name || '',
+        email: response.data.email || '',
+        phone: response.data.phone || '',
+      });
+      
+      // @ts-ignore - profilePicture might exist in teacher object
+      if (response.data.profilePicture) {
+        // @ts-ignore
+        setProfileImage(response.data.profilePicture);
+      }
+    } catch (error) {
+      console.error('Error loading teacher profile:', error);
+      toast.error('Failed to load profile data');
+    }
+  };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -96,6 +113,7 @@ export default function ProfilePage() {
           
           const response = await teachersApi.update(teacher._id, updateData);
           updateUser(response.data);
+          setTeacherData(response.data);
           toast.success('Profile updated successfully');
           setIsEditing(false);
           setImageFile(null);
@@ -109,6 +127,7 @@ export default function ProfilePage() {
         }
         const response = await teachersApi.update(teacher._id, updateData);
         updateUser(response.data);
+        setTeacherData(response.data);
         toast.success('Profile updated successfully');
         setIsEditing(false);
         setIsLoading(false);
@@ -121,7 +140,16 @@ export default function ProfilePage() {
   };
 
   const handleCancel = () => {
-    if (teacher) {
+    if (teacherData) {
+      setFormData({
+        name: teacherData.name || '',
+        email: teacherData.email || '',
+        phone: teacherData.phone || '',
+      });
+      // @ts-ignore
+      setProfileImage(teacherData.profilePicture || null);
+      setImageFile(null);
+    } else if (teacher) {
       setFormData({
         name: teacher.name || '',
         email: teacher.email || '',
@@ -180,7 +208,7 @@ export default function ProfilePage() {
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <span className="text-4xl font-bold text-indigo-600">
-                      {teacher?.name?.charAt(0)?.toUpperCase() || 'T'}
+                      {teacherData?.name?.charAt(0)?.toUpperCase() || teacher?.name?.charAt(0)?.toUpperCase() || 'T'}
                     </span>
                   </div>
                 )}
@@ -257,7 +285,7 @@ export default function ProfilePage() {
                       placeholder="Enter your full name"
                     />
                   ) : (
-                    <p className="text-gray-900 py-2">{teacher?.name || '-'}</p>
+                    <p className="text-gray-900 py-2">{teacherData?.name || teacher?.name || '-'}</p>
                   )}
                 </div>
 
@@ -274,7 +302,7 @@ export default function ProfilePage() {
                       placeholder="Enter your email"
                     />
                   ) : (
-                    <p className="text-gray-900 py-2">{teacher?.email || '-'}</p>
+                    <p className="text-gray-900 py-2">{teacherData?.email || teacher?.email || '-'}</p>
                   )}
                 </div>
 
@@ -289,23 +317,23 @@ export default function ProfilePage() {
                       placeholder="Enter your phone number"
                     />
                   ) : (
-                    <p className="text-gray-900 py-2">{teacher?.phone || '-'}</p>
+                    <p className="text-gray-900 py-2">{teacherData?.phone || teacher?.phone || '-'}</p>
                   )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Teacher ID</label>
-                  <p className="text-gray-900 py-2 font-mono bg-gray-50 px-3 rounded-lg">{teacher?.teacherId || '-'}</p>
+                  <p className="text-gray-900 py-2 font-mono bg-gray-50 px-3 rounded-lg">{teacherData?.teacherId || teacher?.teacherId || '-'}</p>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                   <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
-                    teacher?.status === 'active' 
+                    teacherData?.status === 'active' || teacher?.status === 'active'
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-red-100 text-red-800'
                   }`}>
-                    {teacher?.status || 'active'}
+                    {teacherData?.status || teacher?.status || 'active'}
                   </span>
                 </div>
               </div>
@@ -318,8 +346,8 @@ export default function ProfilePage() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Account Created</p>
                   <p className="text-gray-900 font-medium">
-                    {teacher?.createdAt 
-                      ? new Date(teacher.createdAt).toLocaleDateString('en-US', {
+                    {teacherData?.createdAt 
+                      ? new Date(teacherData.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
@@ -330,8 +358,8 @@ export default function ProfilePage() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-600 mb-1">Last Updated</p>
                   <p className="text-gray-900 font-medium">
-                    {teacher?.updatedAt 
-                      ? new Date(teacher.updatedAt).toLocaleDateString('en-US', {
+                    {teacherData?.updatedAt 
+                      ? new Date(teacherData.updatedAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
