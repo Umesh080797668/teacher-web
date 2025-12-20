@@ -28,6 +28,12 @@ export default function UnifiedDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const qrCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const teachersRef = useRef<UnifiedTeacherData[]>([]);
+
+  // Keep teachersRef in sync with teachers state
+  useEffect(() => {
+    teachersRef.current = teachers;
+  }, [teachers]);
 
   const adminUser = user as AdminUser;
   const companyId = adminUser?._id;
@@ -44,8 +50,8 @@ export default function UnifiedDashboard() {
     // Start polling based on preferences
     if (preferences.autoRefresh) {
       pollingRef.current = setInterval(() => {
-        // Only refresh if no teacher details are expanded
-        const hasExpanded = teachers.some(t => t.isExpanded);
+        // Only refresh if no teacher details are expanded (using ref for current value)
+        const hasExpanded = teachersRef.current.some(t => t.isExpanded);
         if (!hasExpanded) {
           loadActiveTeachers();
         }
