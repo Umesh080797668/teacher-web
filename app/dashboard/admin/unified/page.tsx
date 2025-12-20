@@ -76,11 +76,6 @@ export default function UnifiedDashboard() {
       const response = await sessionApi.getActiveTeachers(companyId);
       const activeTeachers = response.data.teachers || [];
       
-      // Preserve existing expanded states using ref to ensure latest state
-      const existingExpandedStates = new Map(
-        teachersRef.current.map(t => [t.sessionId, t.isExpanded])
-      );
-      
       // Load detailed data for each teacher
       const detailedTeachers = await Promise.all(
         activeTeachers.map(async (teacher: ActiveTeacherData) => {
@@ -106,7 +101,7 @@ export default function UnifiedDashboard() {
               classes: classesRes.data,
               students: studentsRes.data,
               todayAttendance,
-              isExpanded: existingExpandedStates.get(teacher.sessionId) || false,
+              isExpanded: false, // Will be merged with current state
             };
           } catch (error) {
             console.error(`Error loading data for teacher ${teacher.teacher.name}:`, error);
@@ -115,13 +110,20 @@ export default function UnifiedDashboard() {
               classes: [],
               students: [],
               todayAttendance: [],
-              isExpanded: existingExpandedStates.get(teacher.sessionId) || false,
+              isExpanded: false, // Will be merged with current state
             };
           }
         })
       );
 
-      setTeachers(detailedTeachers);
+      // Merge with latest state using functional update to prevent race conditions
+      setTeachers(prevTeachers => {
+        const expandedMap = new Map(prevTeachers.map(t => [t.sessionId, t.isExpanded]));
+        return detailedTeachers.map(dt => ({
+          ...dt,
+          isExpanded: expandedMap.get(dt.sessionId) || false
+        }));
+      });
     } catch (error) {
       console.error('Error loading active teachers:', error);
     } finally {
