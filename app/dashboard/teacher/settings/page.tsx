@@ -58,7 +58,7 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <button
               onClick={() => router.back()}
-              className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -88,10 +88,10 @@ export default function SettingsPage() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Theme</label>
                 <div className="grid grid-cols-2 gap-4">
                   <button
-                    onClick={theme === 'dark' ? handleThemeChange : undefined}
+                    onClick={handleThemeChange}
                     className={`p-4 border-2 rounded-lg transition ${
                       theme === 'light'
-                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
                         : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                     }`}
                   >
@@ -105,10 +105,10 @@ export default function SettingsPage() {
                   </button>
 
                   <button
-                    onClick={theme === 'light' ? handleThemeChange : undefined}
+                    onClick={handleThemeChange}
                     className={`p-4 border-2 rounded-lg transition ${
                       theme === 'dark'
-                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/20'
+                        ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-900/30'
                         : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                     }`}
                   >
@@ -245,7 +245,7 @@ export default function SettingsPage() {
 
       {/* Help & Support Dialog */}
       {showHelpDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center">
@@ -328,7 +328,7 @@ export default function SettingsPage() {
 
       {/* Privacy Policy Dialog */}
       {showPrivacyDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center">
@@ -395,7 +395,7 @@ export default function SettingsPage() {
 
               <div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-4">
                 <p className="text-xs text-gray-500 dark:text-gray-400 italic mb-2">Last Updated: December 2024</p>
-                <p className="text-xs text-gray-600 dark:text-gray-500 mb-1">For the complete privacy policy, visit:</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">For the complete privacy policy, visit:</p>
                 <a 
                   href="https://www.eduverse.com/privacy" 
                   target="_blank" 
