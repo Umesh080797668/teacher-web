@@ -10,7 +10,7 @@ import type { Teacher, AdminUser, TeacherSession, ActiveTeacherData, TeacherDeta
 
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const { user, userType, isAuthenticated, logout } = useAuthStore();
+  const { user, userType, isAuthenticated, logout, isHydrated } = useAuthStore();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [teacherSessions, setTeacherSessions] = useState<TeacherSession[]>([]);
   const [activeTeachers, setActiveTeachers] = useState<ActiveTeacherData[]>([]);
@@ -34,13 +34,15 @@ export default function AdminDashboardPage() {
   const companyId = adminUser?._id;
 
   useEffect(() => {
+    if (!isHydrated) return; // Wait for hydration
+    
     if (!isAuthenticated || userType !== 'admin') {
       router.push('/login/admin');
       return;
     }
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, userType, router]);
+  }, [isAuthenticated, userType, router, isHydrated]);
 
   useEffect(() => {
     return () => {

@@ -11,7 +11,7 @@ import Pagination from '@/lib/Pagination';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
-  const { user, userType, isAuthenticated, logout, session } = useAuthStore();
+  const { user, userType, isAuthenticated, logout, session, isHydrated } = useAuthStore();
   const { theme } = useTheme();
   const [classes, setClasses] = useState<Class[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
@@ -106,12 +106,14 @@ export default function TeacherDashboardPage() {
   }, [isAuthenticated, userType, session, logout, router]);
 
   useEffect(() => {
+    if (!isHydrated) return; // Wait for hydration
+    
     if (!isAuthenticated || userType !== 'teacher') {
       router.push('/login');
       return;
     }
     loadData();
-  }, [isAuthenticated, userType, router]);
+  }, [isAuthenticated, userType, router, isHydrated]);
 
   const loadData = async () => {
     if (!teacherId) return;
