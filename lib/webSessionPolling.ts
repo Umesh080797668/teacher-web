@@ -46,7 +46,7 @@ class WebSessionService {
 
       try {
         console.log('Polling session:', this.sessionId);
-        const response = await sessionApi.verifySession(this.sessionId);
+        const response = await sessionApi.checkAuth(this.sessionId);
         const data = response.data;
 
         console.log('Polling response:', data);

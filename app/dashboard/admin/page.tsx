@@ -208,11 +208,11 @@ export default function AdminDashboardPage() {
 
       qrCheckIntervalRef.current = setInterval(async () => {
         try {
-          // console.log('Polling session status for:', sessionId);
-          const verifyResponse = await sessionApi.verifySession(sessionId);
-          // console.log('Poll response:', verifyResponse.data);
+          console.log('Polling session:', sessionId);
+          const checkAuthResponse = await sessionApi.checkAuth(sessionId);
+          console.log('Polling response:', checkAuthResponse.data);
 
-          if (verifyResponse.data.authenticated) {
+          if (checkAuthResponse.data.authenticated) {
             console.log('Session authenticated! Reloading data...');
             clearInterval(qrCheckIntervalRef.current!);
             setQrCodeData('');
@@ -221,9 +221,13 @@ export default function AdminDashboardPage() {
             await loadData();
             await loadActiveTeachers();
           }
-        } catch (error) {
+        } catch (error: any) {
           // Session not yet authenticated, continue polling
-          // console.log('Polling error (expected if not auth yet):', error);
+          if (error.response?.status === 404) {
+            console.log('Polling error: 404', error.message);
+            console.log('Session not found - might need to regenerate QR');
+          }
+          // Continue polling even on errors
         }
       }, 2000);
 
