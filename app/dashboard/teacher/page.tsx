@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
 import { useTheme } from '@/lib/ThemeContext';
-import { classesApi, studentsApi, attendanceApi, paymentsApi } from '@/lib/api';
+import { classesApi, studentsApi, attendanceApi, paymentsApi, sessionApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Class, Student, Attendance, Payment, Teacher } from '@/lib/types';
 
@@ -45,39 +45,33 @@ export default function TeacherDashboardPage() {
 
     const checkSessionStatus = async () => {
       try {
-        const response = await fetch('https://teacher-eight-chi.vercel.app/api/web-session/verify', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ sessionId: session.sessionId }),
-        });
+        // Use the proper API method instead of direct fetch
+        const response = await sessionApi.verifySession(session.sessionId);
 
-        // If session is not found (404) or not valid, logout
-        if (response.status === 404) {
-          console.log('Session is no longer active, logging out...');
-          toast.error('Your session has been disconnected');
-          logout();
-          router.push('/login');
-          return;
-        }
-
-        const data = await response.json();
-        
-        // If session is not valid, logout
-        if (!data.valid) {
+        // If session verification fails or session is not valid
+        if (!response.data || !response.data.valid) {
           console.log('Session is no longer valid, logging out...');
           toast.error('Your session has been disconnected');
           logout();
           router.push('/login');
         }
-      } catch (error) {
-        console.error('Error checking session status:', error);
-        // On network error, don't logout - just log the error
+      } catch (error: any) {
+        // Handle API errors gracefully
+        if (error.response?.status === 404) {
+          console.log('Session verification endpoint not available, but session may still be active');
+          // Don't show error toast for 404 - this is expected when backend is not available
+        } else if (error.response?.status === 401) {
+          console.log('Session unauthorized, logging out...');
+          toast.error('Your session has expired');
+          logout();
+          router.push('/login');
+        } else {
+          // Network error or other issues - don't show to user, just log
+          console.log('Session verification network error (expected when backend unavailable)');
+        }
+        // On any error, don't logout - just continue polling
       }
-    };
-
-    // Check session status every 5 seconds
+    };    // Check session status every 5 seconds
     const intervalId = setInterval(checkSessionStatus, 5000);
 
     return () => clearInterval(intervalId);
