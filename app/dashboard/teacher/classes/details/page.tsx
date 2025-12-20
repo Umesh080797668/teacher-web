@@ -169,10 +169,10 @@ function ClassDetailsContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading class details...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading class details...</p>
         </div>
       </div>
     );
@@ -180,9 +180,9 @@ function ClassDetailsContent() {
 
   if (!classData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <p className="text-gray-600">Class not found</p>
+          <p className="text-gray-600 dark:text-gray-400">Class not found</p>
         </div>
       </div>
     );
@@ -191,14 +191,14 @@ function ClassDetailsContent() {
   const attendanceRate = calculateAttendanceRate();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <button
               onClick={() => router.push('/dashboard/teacher')}
-              className="flex items-center text-gray-600 hover:text-gray-900"
+              className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -208,13 +208,13 @@ function ClassDetailsContent() {
             <div className="flex space-x-2">
               <button
                 onClick={() => setShowEditModal(true)}
-                className="px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition"
+                className="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-slate-700 border border-indigo-200 dark:border-slate-600 rounded-lg hover:bg-indigo-100 dark:hover:bg-slate-600 transition"
               >
                 Edit Class
               </button>
               <button
                 onClick={() => setShowDeleteModal(true)}
-                className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition"
+                className="px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-slate-700 border border-red-200 dark:border-slate-600 rounded-lg hover:bg-red-100 dark:hover:bg-slate-600 transition"
               >
                 Delete Class
               </button>
@@ -226,11 +226,11 @@ function ClassDetailsContent() {
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Class Info Card */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 mb-6">
           <div className="flex items-start justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{classData.name}</h1>
-              <p className="text-gray-500">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{classData.name}</h1>
+              <p className="text-gray-500 dark:text-gray-400">
                 Created on {new Date(classData.createdAt || '').toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
@@ -238,8 +238,8 @@ function ClassDetailsContent() {
                 })}
               </p>
             </div>
-            <div className="w-16 h-16 bg-indigo-100 rounded-xl flex items-center justify-center">
-              <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-indigo-100 dark:bg-slate-700 rounded-xl flex items-center justify-center">
+              <svg className="w-8 h-8 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
               </svg>
             </div>
@@ -247,25 +247,25 @@ function ClassDetailsContent() {
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-            <div className="bg-blue-50 rounded-lg p-4">
-              <p className="text-sm text-blue-600 font-medium mb-1">Total Students</p>
-              <p className="text-3xl font-bold text-blue-900">{students.length}</p>
+            <div className="bg-blue-50 dark:bg-slate-700 rounded-lg p-4">
+              <p className="text-sm text-blue-600 dark:text-blue-400 font-medium mb-1">Total Students</p>
+              <p className="text-3xl font-bold text-blue-900 dark:text-blue-100">{students.length}</p>
             </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <p className="text-sm text-green-600 font-medium mb-1">Attendance Rate</p>
-              <p className="text-3xl font-bold text-green-900">{attendanceRate.toFixed(1)}%</p>
+            <div className="bg-green-50 dark:bg-slate-700 rounded-lg p-4">
+              <p className="text-sm text-green-600 dark:text-green-400 font-medium mb-1">Attendance Rate</p>
+              <p className="text-3xl font-bold text-green-900 dark:text-green-100">{attendanceRate.toFixed(1)}%</p>
             </div>
-            <div className="bg-purple-50 rounded-lg p-4">
-              <p className="text-sm text-purple-600 font-medium mb-1">Total Records</p>
-              <p className="text-3xl font-bold text-purple-900">{attendanceRecords.length}</p>
+            <div className="bg-purple-50 dark:bg-slate-700 rounded-lg p-4">
+              <p className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-1">Total Records</p>
+              <p className="text-3xl font-bold text-purple-900 dark:text-purple-100">{attendanceRecords.length}</p>
             </div>
           </div>
         </div>
 
         {/* Students Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Students in this Class</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Students in this Class</h2>
             <button
               onClick={() => {
                 // pre-generate student id and show modal (readonly)
@@ -288,30 +288,30 @@ function ClassDetailsContent() {
                 const attendanceRate = getStudentAttendanceRate(student._id);
                 
                 return (
-                  <div key={student._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                  <div key={student._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition">
                     <div className="flex items-center space-x-4 flex-1">
-                      <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
-                        <span className="text-indigo-600 font-semibold text-lg">
+                      <div className="w-12 h-12 bg-indigo-100 dark:bg-slate-600 rounded-full flex items-center justify-center">
+                        <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
                           {student.name.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{student.name}</h3>
-                        <p className="text-sm text-gray-500 font-mono">{student.studentId}</p>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{student.name}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">{student.studentId}</p>
                         {student.email && (
-                          <p className="text-sm text-gray-500">{student.email}</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-gray-600 mb-1">Attendance</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Attendance</p>
                         <div className="flex items-center space-x-2">
-                          <div className="w-24 bg-gray-200 rounded-full h-2">
+                          <div className="w-24 bg-gray-200 dark:bg-slate-600 rounded-full h-2">
                             <div
                               className="bg-green-500 h-2 rounded-full"
                               style={{ width: `${attendanceRate}%` }}
                             ></div>
                           </div>
-                          <span className="text-sm font-semibold text-gray-900">
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">
                             {attendanceRate.toFixed(0)}%
                           </span>
                         </div>
@@ -319,7 +319,7 @@ function ClassDetailsContent() {
                     </div>
                     <button
                       onClick={() => handleDeleteStudent(student._id, student.name)}
-                      className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
+                      className="ml-4 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-600 rounded-lg transition"
                       title="Delete student"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -331,12 +331,12 @@ function ClassDetailsContent() {
               })}
             </div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
-              <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
-              <p className="text-lg font-medium">No students in this class yet</p>
-              <p className="text-sm mt-2">Click "Add Student" to add students to this class</p>
+              <p className="text-lg font-medium text-gray-900 dark:text-white">No students in this class yet</p>
+              <p className="text-sm mt-2 text-gray-500 dark:text-gray-400">Click "Add Student" to add students to this class</p>
             </div>
           )}
         </div>
@@ -345,16 +345,16 @@ function ClassDetailsContent() {
       {/* Edit Class Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Edit Class</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 border dark:border-slate-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Edit Class</h3>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Class Name</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Class Name</label>
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                 placeholder="Enter class name"
               />
             </div>
@@ -362,7 +362,7 @@ function ClassDetailsContent() {
             <div className="flex space-x-3 mt-6">
               <button
                 onClick={() => setShowEditModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
               >
                 Cancel
               </button>
@@ -380,21 +380,21 @@ function ClassDetailsContent() {
       {/* Delete Class Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
-              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 border dark:border-slate-700">
+            <div className="flex items-center justify-center w-12 h-12 bg-red-100 dark:bg-slate-700 rounded-full mx-auto mb-4">
+              <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">Delete Class</h3>
-            <p className="text-gray-600 mb-6 text-center">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">Delete Class</h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
               Are you sure you want to delete "{classData.name}"? This action cannot be undone.
             </p>
 
             <div className="flex space-x-3">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
               >
                 Cancel
               </button>
@@ -412,43 +412,43 @@ function ClassDetailsContent() {
       {/* Add Student Modal */}
       {showAddStudentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add Student to Class</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 border dark:border-slate-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Add Student to Class</h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Student ID (Auto-generated)
                 </label>
                 <input
                   type="text"
                   value={newStudent.studentId}
                   readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 font-mono"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-slate-700 text-gray-600 dark:text-gray-400 font-mono"
                 />
-                <p className="text-xs text-gray-500 mt-1">This ID is generated automatically and cannot be edited</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">This ID is generated automatically and cannot be edited</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Student Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={newStudent.name}
                   onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="John Doe"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email (Optional)</label>
                 <input
                   type="email"
                   value={newStudent.email}
                   onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   placeholder="student@example.com"
                 />
               </div>
@@ -460,7 +460,7 @@ function ClassDetailsContent() {
                   setShowAddStudentModal(false);
                   setNewStudent({ name: '', email: '', studentId: '' });
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition"
               >
                 Cancel
               </button>
