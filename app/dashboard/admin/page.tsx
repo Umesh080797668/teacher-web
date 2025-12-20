@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useAuthStore } from '@/lib/store';
 import { teachersApi, sessionApi } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { io, Socket } from 'socket.io-client';
 import type { Teacher, AdminUser, TeacherSession, ActiveTeacherData, TeacherDetailedData } from '@/lib/types';
 
 export default function AdminDashboardPage() {
@@ -30,6 +31,7 @@ export default function AdminDashboardPage() {
     password: '',
   });
   const qrCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   const adminUser = user as AdminUser;
   const companyId = adminUser?._id;
@@ -41,7 +43,39 @@ export default function AdminDashboardPage() {
       router.push('/login/admin');
       return;
     }
+    
     loadData();
+    
+    // Setup real-time socket connection
+    const socket = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3004', {
+      transports: ['websocket', 'polling'],
+      upgrade: true,
+    });
+    
+    socketRef.current = socket;
+    
+    // Listen for session disconnect events
+    socket.on('session-disconnected', (data: { sessionId: string }) => {
+      console.log('Session disconnected:', data.sessionId);
+      toast.success('Teacher session ended');
+      loadData(); // Refresh data to update active sessions count
+    });
+    
+    socket.on('connect', () => {
+      console.log('Connected to real-time updates');
+    });
+    
+    socket.on('disconnect', () => {
+      console.log('Disconnected from real-time updates');
+    });
+    
+    // Cleanup on unmount
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, userType, router, isHydrated]);
 
