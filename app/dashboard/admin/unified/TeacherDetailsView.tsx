@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import type { ActiveTeacherData, Class, Student, Attendance } from '@/lib/types';
-import { paymentsApi, studentsApi, classesApi } from '@/lib/api';
+import { paymentsApi, studentsApi, classesApi, attendanceApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Payment } from '@/lib/types';
 import Pagination from '@/lib/Pagination';
@@ -47,6 +47,9 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
   // Reports Tab State
   const [reportTab, setReportTab] = useState<'summary' | 'students' | 'daily' | 'monthly'>('summary');
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [dailyAttendance, setDailyAttendance] = useState<Attendance[]>([]);
+  const [loadingDailyAttendance, setLoadingDailyAttendance] = useState(false);
+  const [dailyPollingInterval, setDailyPollingInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Payment Tab State
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
@@ -70,6 +73,65 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
       setLoadingPayments(false);
     }
   };
+
+  const loadDailyAttendance = useCallback(async (date: Date) => {
+    setLoadingDailyAttendance(true);
+    try {
+      const response = await attendanceApi.getAll({
+        teacherId: teacher.teacher.teacherId,
+        month: date.getMonth() + 1,
+        year: date.getFullYear(),
+      });
+      
+      // Filter attendance for the selected date
+      const selectedDateStr = date.toDateString();
+      const dayAttendance = response.data.filter(a => new Date(a.date).toDateString() === selectedDateStr);
+      
+      setDailyAttendance(dayAttendance);
+    } catch (error) {
+      console.error('Error loading daily attendance:', error);
+      toast.error('Failed to load daily attendance data');
+    } finally {
+      setLoadingDailyAttendance(false);
+    }
+  }, [teacher.teacher.teacherId]);
+
+  // Effect to load initial daily attendance when component mounts or date changes
+  useEffect(() => {
+    if (reportTab === 'daily') {
+      loadDailyAttendance(selectedDate);
+    }
+  }, [selectedDate, reportTab, loadDailyAttendance]);
+
+  // Effect to start/stop polling when daily tab is active
+  useEffect(() => {
+    if (reportTab === 'daily') {
+      // Start polling every 5 seconds
+      const interval = setInterval(() => {
+        loadDailyAttendance(selectedDate);
+      }, 5000);
+      
+      setDailyPollingInterval(interval);
+      
+      return () => {
+        if (interval) {
+          clearInterval(interval);
+        }
+      };
+    } else {
+      // Stop polling when not on daily tab
+      if (dailyPollingInterval) {
+        clearInterval(dailyPollingInterval);
+        setDailyPollingInterval(null);
+      }
+    }
+    
+    return () => {
+      if (dailyPollingInterval) {
+        clearInterval(dailyPollingInterval);
+      }
+    };
+  }, [reportTab, selectedDate, loadDailyAttendance]);
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
@@ -798,13 +860,30 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xl font-bold text-gray-900 dark:text-white">Daily Attendance View</h4>
-                  <input
-                    type="date"
-                    value={selectedDate.toISOString().split('T')[0]}
-                    onChange={(e) => setSelectedDate(new Date(e.target.value))}
-                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => loadDailyAttendance(selectedDate)}
+                      disabled={loadingDailyAttendance}
+                      className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    >
+                      {loadingDailyAttendance ? '🔄' : '↻'} Refresh
+                    </button>
+                    <input
+                      type="date"
+                      value={selectedDate.toISOString().split('T')[0]}
+                      onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                      className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
                 </div>
+
+                {/* Loading indicator */}
+                {loadingDailyAttendance && (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                    <span className="ml-2 text-gray-600 dark:text-gray-400">Loading attendance data...</span>
+                  </div>
+                )}
 
                 {/* Date Info Card */}
                 <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
@@ -831,12 +910,10 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
 
                 {/* Daily Statistics */}
                 {(() => {
-                  const selectedDateStr = selectedDate.toDateString();
-                  const dayAttendance = teacher.todayAttendance.filter(a => new Date(a.date).toDateString() === selectedDateStr);
-                  const presentCount = dayAttendance.filter(a => a.status === 'present').length;
-                  const absentCount = dayAttendance.filter(a => a.status === 'absent').length;
-                  const lateCount = dayAttendance.filter(a => a.status === 'late').length;
-                  const totalRecorded = dayAttendance.length;
+                  const presentCount = dailyAttendance.filter(a => a.status === 'present').length;
+                  const absentCount = dailyAttendance.filter(a => a.status === 'absent').length;
+                  const lateCount = dailyAttendance.filter(a => a.status === 'late').length;
+                  const totalRecorded = dailyAttendance.length;
                   const attendanceRate = totalRecorded > 0 ? (presentCount / totalRecorded) * 100 : 0;
 
                   return (
@@ -934,7 +1011,7 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
                                 ) : (
                                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {classStudents.map(student => {
-                                      const studentAttendance = dayAttendance.find(a => a.studentId === student._id);
+                                      const studentAttendance = dailyAttendance.find(a => a.studentId === student._id);
                                       const status = studentAttendance?.status || 'not-recorded';
                                       
                                       let statusColor = 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400';
