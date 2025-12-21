@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
-import { attendanceApi, studentsApi, classesApi, reportsApi } from '@/lib/api';
+import { attendanceApi, studentsApi, classesApi, reportsApi, paymentsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import type { Attendance, Student, Class, Teacher } from '@/lib/types';
+import type { Attendance, Student, Class, Teacher, Payment } from '@/lib/types';
 import Pagination from '@/lib/Pagination';
 
 interface StudentReport {
@@ -50,11 +50,13 @@ export default function ReportsPage() {
   const [attendance, setAttendance] = useState<Attendance[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'summary' | 'students' | 'monthly' | 'daily'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'students' | 'monthly' | 'daily' | 'payments'>('summary');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedClassFilter, setSelectedClassFilter] = useState<string>('all');
 
   // Pagination states
   const [studentsReportsCurrentPage, setStudentsReportsCurrentPage] = useState(1);
@@ -83,15 +85,17 @@ export default function ReportsPage() {
     
     setIsLoading(true);
     try {
-      const [attendanceRes, studentsRes, classesRes] = await Promise.all([
+      const [attendanceRes, studentsRes, classesRes, paymentsRes] = await Promise.all([
         attendanceApi.getAll({ month: selectedMonth, year: selectedYear, teacherId }),
         studentsApi.getAll(teacherId),
         classesApi.getAll(teacherId),
+        paymentsApi.getAll({ teacherId }).catch(() => ({ data: [] })),
       ]);
 
       setAttendance(attendanceRes.data);
       setStudents(studentsRes.data);
       setClasses(classesRes.data);
+      setPayments(paymentsRes.data || []);
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load reports');
@@ -160,7 +164,7 @@ export default function ReportsPage() {
   });
 
   // Calculate student reports
-  const studentReports: StudentReport[] = students.map(student => {
+  const allStudentReports: StudentReport[] = students.map(student => {
     const studentAttendance = attendance.filter(a => 
       a.studentId === student._id || a.studentId?.toString() === student._id?.toString()
     );
@@ -179,6 +183,14 @@ export default function ReportsPage() {
       attendanceRate,
     };
   }).sort((a, b) => b.attendanceRate - a.attendanceRate);
+
+  // Filter student reports by class
+  const studentReports = selectedClassFilter === 'all' 
+    ? allStudentReports 
+    : allStudentReports.filter(report => {
+        const student = students.find(s => s._id === report.studentId);
+        return student?.classId === selectedClassFilter;
+      });
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -250,7 +262,8 @@ export default function ReportsPage() {
               { id: 'summary', name: 'Attendance Summary', icon: '📊' },
               { id: 'students', name: 'Student Reports', icon: '👨‍🎓' },
               { id: 'daily', name: 'Daily View', icon: '📅' },
-              { id: 'monthly', name: 'Monthly Stats', icon: '�' },
+              { id: 'monthly', name: 'Monthly Stats', icon: '📈' },
+              { id: 'payments', name: 'Payments', icon: '💳' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -394,6 +407,19 @@ export default function ReportsPage() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Student Reports</h2>
               <div className="flex items-center space-x-4">
                 <select
+                  value={selectedClassFilter}
+                  onChange={(e) => {
+                    setSelectedClassFilter(e.target.value);
+                    setStudentsReportsCurrentPage(1);
+                  }}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                >
+                  <option value="all">All Classes</option>
+                  {classes.map((cls) => (
+                    <option key={cls._id} value={cls._id}>{cls.name}</option>
+                  ))}
+                </select>
+                <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
                   className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
@@ -417,10 +443,19 @@ export default function ReportsPage() {
             <div className="space-y-4">
               {studentReports
                 .slice((studentsReportsCurrentPage - 1) * STUDENTS_REPORTS_PER_PAGE, studentsReportsCurrentPage * STUDENTS_REPORTS_PER_PAGE)
-                .map((report) => (
+                .map((report) => {
+                  const student = students.find(s => s._id === report.studentId);
+                  const studentClass = classes.find(c => c._id === student?.classId);
+                  
+                  return (
                 <div key={report.studentId} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{report.studentName}</h4>
+                    <div>
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{report.studentName}</h4>
+                      {studentClass && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{studentClass.name}</p>
+                      )}
+                    </div>
                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                       report.attendanceRate >= 75 
                         ? 'bg-green-100 dark:bg-slate-700 text-green-600 dark:text-green-400'
@@ -448,7 +483,8 @@ export default function ReportsPage() {
                     </div>
                   </div>
                 </div>
-              ))}
+              );
+            })}
             </div>
 
             {studentReports.length > STUDENTS_REPORTS_PER_PAGE && (
@@ -739,6 +775,105 @@ export default function ReportsPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Payments Tab */}
+        {activeTab === 'payments' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Payments</h2>
+              <div className="flex items-center space-x-4">
+                <select
+                  value={selectedClassFilter}
+                  onChange={(e) => setSelectedClassFilter(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                >
+                  <option value="all">All Classes</option>
+                  {classes.map((cls) => (
+                    <option key={cls._id} value={cls._id}>{cls.name}</option>
+                  ))}
+                </select>
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                >
+                  {monthNames.map((month, index) => (
+                    <option key={index + 1} value={index + 1}>{month}</option>
+                  ))}
+                </select>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                >
+                  {Array.from({ length: 10 }, (_, i) => 2020 + i).map((year) => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+              {payments.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-indigo-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-3xl">💳</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Payment Records</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    No payment records found for {monthNames[selectedMonth - 1]} {selectedYear}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {payments
+                    .filter(payment => {
+                      const paymentDate = new Date(payment.date);
+                      const matchesMonth = paymentDate.getMonth() + 1 === selectedMonth;
+                      const matchesYear = paymentDate.getFullYear() === selectedYear;
+                      const matchesClass = selectedClassFilter === 'all' || payment.classId === selectedClassFilter;
+                      return matchesMonth && matchesYear && matchesClass;
+                    })
+                    .map(payment => {
+                      const student = students.find(s => s._id === payment.studentId);
+                      const cls = classes.find(c => c._id === payment.classId);
+                      
+                      return (
+                        <div key={payment._id} className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <div className="text-2xl">💰</div>
+                              <div>
+                                <h4 className="font-medium text-gray-900 dark:text-white">
+                                  {student?.name || 'Unknown Student'}
+                                </h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">
+                                  {cls?.name || 'Unknown Class'} • {new Date(payment.date).toLocaleDateString()}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="text-right">
+                              <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                                LKR {payment.amount.toFixed(2)}
+                              </div>
+                              <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                                payment.type === 'full' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                payment.type === 'half' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                                'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                              }`}>
+                                {payment.type}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>

@@ -6,6 +6,7 @@ import { paymentsApi, studentsApi, classesApi, attendanceApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Payment } from '@/lib/types';
 import Pagination from '@/lib/Pagination';
+import StudentDetailModal from './StudentDetailModal';
 
 interface UnifiedTeacherData extends ActiveTeacherData {
   classes: Class[];
@@ -51,6 +52,7 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
   const [dailyAttendance, setDailyAttendance] = useState<Attendance[]>([]);
   const [loadingDailyAttendance, setLoadingDailyAttendance] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [selectedClassFilterReport, setSelectedClassFilterReport] = useState<string>('all');
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Class details modal state
@@ -66,6 +68,10 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
   // Delete confirmation modals
   const [deleteStudentId, setDeleteStudentId] = useState<string | null>(null);
   const [deleteClassId, setDeleteClassId] = useState<string | null>(null);
+
+  // Student detail modal state
+  const [selectedStudentForDetail, setSelectedStudentForDetail] = useState<Student | null>(null);
+  const [showStudentDetailModal, setShowStudentDetailModal] = useState(false);
 
   const ITEMS_PER_PAGE = 10;
 
@@ -279,7 +285,7 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
   });
 
   // Student reports
-  const studentReports = teacher.students.map(student => {
+  const allStudentReports = teacher.students.map(student => {
     const studentAtt = monthAttendance.filter(a => 
       a.studentId === student._id || a.studentId?.toString() === student._id?.toString()
     );
@@ -298,6 +304,11 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
       rate
     };
   }).sort((a, b) => b.rate - a.rate);
+
+  // Filter student reports by class
+  const studentReports = selectedClassFilterReport === 'all' 
+    ? allStudentReports
+    : allStudentReports.filter(student => student.classId === selectedClassFilterReport);
 
   // Class reports
   const classReports = teacher.classes.map(cls => {
@@ -771,12 +782,32 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Payment Records
               </h3>
-              <button
-                onClick={() => setShowAddPaymentModal(true)}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
-              >
-                + Add Payment
-              </button>
+              <div className="flex space-x-2">
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                >
+                  {monthNames.map((month, index) => (
+                    <option key={index} value={index + 1}>{month}</option>
+                  ))}
+                </select>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg text-sm"
+                >
+                  {[2023, 2024, 2025].map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => setShowAddPaymentModal(true)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+                >
+                  + Add Payment
+                </button>
+              </div>
             </div>
             
             {loadingPayments ? (
@@ -789,41 +820,46 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
               </div>
             ) : (
               <div className="space-y-3">
-                {payments.map(payment => {
-                  const student = teacher.students.find(s => s._id === payment.studentId);
-                  const cls = teacher.classes.find(c => c._id === payment.classId);
-                  
-                  return (
-                    <div key={payment._id} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="text-2xl">💰</div>
-                          <div>
-                            <h4 className="font-medium text-gray-900 dark:text-white">
-                              {student?.name || 'Unknown Student'}
-                            </h4>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                              {cls?.name || 'Unknown Class'} • {new Date(payment.date).toLocaleDateString()}
-                            </p>
+                {payments
+                  .filter(payment => {
+                    const paymentDate = new Date(payment.date);
+                    return paymentDate.getMonth() + 1 === selectedMonth && paymentDate.getFullYear() === selectedYear;
+                  })
+                  .map(payment => {
+                    const student = teacher.students.find(s => s._id === payment.studentId);
+                    const cls = teacher.classes.find(c => c._id === payment.classId);
+                    
+                    return (
+                      <div key={payment._id} className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <div className="text-2xl">💰</div>
+                            <div>
+                              <h4 className="font-medium text-gray-900 dark:text-white">
+                                {student?.name || 'Unknown Student'}
+                              </h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {cls?.name || 'Unknown Class'} • {new Date(payment.date).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                            LKR {payment.amount.toFixed(2)}
+                          
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                              LKR {payment.amount.toFixed(2)}
+                            </div>
+                            <span className={`inline-block px-2 py-1 text-xs rounded-full ${
+                              payment.type === 'full' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                              payment.type === 'half' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
+                              'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
+                            }`}>
+                              {payment.type}
+                            </span>
                           </div>
-                          <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                            payment.type === 'full' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
-                            payment.type === 'half' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
-                            'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                          }`}>
-                            {payment.type}
-                          </span>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             )}
           </div>
@@ -1122,11 +1158,28 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
             {/* Student Reports */}
             {reportTab === 'students' && (
               <div>
-                <h4 className="font-medium text-gray-900 dark:text-white mb-3">
-                  Student Attendance ({monthNames[selectedMonth - 1]} {selectedYear})
-                </h4>
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-medium text-gray-900 dark:text-white">
+                    Student Attendance ({monthNames[selectedMonth - 1]} {selectedYear})
+                  </h4>
+                  <select
+                    value={selectedClassFilterReport}
+                    onChange={(e) => setSelectedClassFilterReport(e.target.value)}
+                    className="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="all">All Classes</option>
+                    {teacher.classes.map((cls) => (
+                      <option key={cls._id} value={cls._id}>{cls.name}</option>
+                    ))}
+                  </select>
+                </div>
                 <div className="space-y-2">
-                  {studentReports.map(student => (
+                  {studentReports.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                      No students found for the selected class
+                    </div>
+                  ) : (
+                    studentReports.map(student => (
                     <div key={student._id} className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
@@ -1151,7 +1204,8 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ))
+                  )}
                 </div>
               </div>
             )}

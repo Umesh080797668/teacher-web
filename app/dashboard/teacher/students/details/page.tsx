@@ -3,9 +3,9 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
-import { studentsApi, classesApi, attendanceApi } from '@/lib/api';
+import { studentsApi, classesApi, attendanceApi, paymentsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import type { Student, Class, Attendance, Teacher } from '@/lib/types';
+import type { Student, Class, Attendance, Teacher, Payment } from '@/lib/types';
 
 function StudentDetailsContent() {
   const router = useRouter();
@@ -15,9 +15,11 @@ function StudentDetailsContent() {
   const [student, setStudent] = useState<Student | null>(null);
   const [studentClass, setStudentClass] = useState<Class | null>(null);
   const [attendanceRecords, setAttendanceRecords] = useState<Attendance[]>([]);
+  const [paymentRecords, setPaymentRecords] = useState<Payment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'attendance' | 'payments'>('attendance');
   const [editData, setEditData] = useState({
     name: '',
     email: '',
@@ -40,9 +42,10 @@ function StudentDetailsContent() {
 
     setIsLoading(true);
     try {
-      const [studentRes, attendanceRes] = await Promise.all([
+      const [studentRes, attendanceRes, paymentsRes] = await Promise.all([
         studentsApi.getById(studentId),
         attendanceApi.getAll({ studentId }),
+        paymentsApi.getAll({ studentId }).catch(() => ({ data: [] })), // Handle if payments API doesn't exist yet
       ]);
 
       setStudent(studentRes.data);
@@ -51,6 +54,7 @@ function StudentDetailsContent() {
         email: studentRes.data.email || '',
       });
       setAttendanceRecords(attendanceRes.data);
+      setPaymentRecords(paymentsRes.data || []);
 
       // Load class data if student has a class
       if (studentRes.data.classId) {
@@ -125,6 +129,35 @@ function StudentDetailsContent() {
     });
 
     return grouped;
+  };
+
+  const groupPaymentsByMonth = () => {
+    const grouped: { [key: string]: Payment[] } = {};
+    
+    paymentRecords.forEach(record => {
+      const date = new Date(record.date);
+      const monthYear = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+      
+      if (!grouped[monthYear]) {
+        grouped[monthYear] = [];
+      }
+      grouped[monthYear].push(record);
+    });
+
+    return grouped;
+  };
+
+  const getPaymentTypeColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'full':
+        return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30';
+      case 'half':
+        return 'text-orange-600 bg-orange-100 dark:text-orange-400 dark:bg-orange-900/30';
+      case 'free':
+        return 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30';
+      default:
+        return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-700';
+    }
   };
 
   if (isLoading) {
@@ -295,7 +328,36 @@ function StudentDetailsContent() {
           </div>
         </div>
 
-        {/* Attendance History */}
+        {/* Tabs for Attendance and Payments */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px">
+              <button
+                onClick={() => setActiveTab('attendance')}
+                className={`py-4 px-6 text-sm font-medium border-b-2 transition ${
+                  activeTab === 'attendance'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                📅 Attendance History
+              </button>
+              <button
+                onClick={() => setActiveTab('payments')}
+                className={`py-4 px-6 text-sm font-medium border-b-2 transition ${
+                  activeTab === 'payments'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                💳 Payment History
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Attendance History Tab */}
+        {activeTab === 'attendance' && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Attendance History</h2>
           
@@ -344,6 +406,62 @@ function StudentDetailsContent() {
             </div>
           )}
         </div>
+        )}
+
+        {/* Payment History Tab */}
+        {activeTab === 'payments' && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Payment History</h2>
+          
+          {paymentRecords.length > 0 ? (
+            <div className="space-y-6">
+              {Object.entries(groupPaymentsByMonth()).map(([monthYear, records]) => {
+                const totalAmount = records.reduce((sum, record) => sum + record.amount, 0);
+                return (
+                  <div key={monthYear}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{monthYear}</h3>
+                      <span className="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full text-sm font-medium">
+                        Total: Rs. {totalAmount.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((record) => (
+                        <div key={record._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                          <div className="flex items-center space-x-4">
+                            <div className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentTypeColor(record.type)}`}>
+                              {record.type.toUpperCase()}
+                            </div>
+                            <p className="text-gray-900 dark:text-white font-medium">
+                              {new Date(record.date).toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                          <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                            Rs. {record.amount.toFixed(2)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+              <svg className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <p className="text-lg font-medium">No payment records yet</p>
+              <p className="text-sm mt-2">Payment records will appear here once added</p>
+            </div>
+          )}
+        </div>
+        )}
       </main>
 
       {/* Edit Student Modal */}
