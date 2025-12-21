@@ -49,6 +49,7 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dailyAttendance, setDailyAttendance] = useState<Attendance[]>([]);
   const [loadingDailyAttendance, setLoadingDailyAttendance] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Payment Tab State
@@ -62,8 +63,14 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
   const ITEMS_PER_PAGE = 10;
 
   // Load attendance for selected date
-  const loadDailyAttendance = async (date: Date) => {
-    setLoadingDailyAttendance(true);
+  const loadDailyAttendance = async (date: Date, isInitial: boolean = false) => {
+    if (isInitial) {
+      setLoadingDailyAttendance(true);
+      setIsInitialLoad(true);
+    } else {
+      setIsInitialLoad(false);
+    }
+    
     try {
       const month = date.getMonth() + 1;
       const year = date.getFullYear();
@@ -83,20 +90,24 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
       setDailyAttendance(filteredAttendance);
     } catch (error) {
       console.error('Error loading daily attendance:', error);
-      toast.error('Failed to load attendance data');
+      if (isInitial) {
+        toast.error('Failed to load attendance data');
+      }
     } finally {
-      setLoadingDailyAttendance(false);
+      if (isInitial) {
+        setLoadingDailyAttendance(false);
+      }
     }
   };
 
   // Effect to load daily attendance when date changes or when in daily view
   useEffect(() => {
     if (activeTab === 'reports' && reportTab === 'daily') {
-      loadDailyAttendance(selectedDate);
+      loadDailyAttendance(selectedDate, true);
 
-      // Start polling every 5 seconds
+      // Start polling every 5 seconds (background polling, no loading indicator)
       pollingIntervalRef.current = setInterval(() => {
-        loadDailyAttendance(selectedDate);
+        loadDailyAttendance(selectedDate, false);
       }, 5000);
 
       // Cleanup polling on unmount or when leaving daily view
@@ -863,8 +874,8 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
                   />
                 </div>
 
-                {/* Loading indicator */}
-                {loadingDailyAttendance && (
+                {/* Loading indicator - only show during initial load */}
+                {loadingDailyAttendance && isInitialLoad && (
                   <div className="flex items-center justify-center py-4">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
                     <span className="ml-2 text-gray-600 dark:text-gray-400">Loading attendance data...</span>
