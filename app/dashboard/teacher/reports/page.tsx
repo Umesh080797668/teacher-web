@@ -115,7 +115,7 @@ export default function ReportsPage() {
   const dailyByClass: ClassReport[] = classes.map(cls => {
     const classStudents = students.filter(s => s.classId === cls._id);
     const classAttendance = todayAttendance.filter(a => 
-      classStudents.some(s => s._id === a.studentId)
+      classStudents.some(s => s._id === a.studentId || s._id?.toString() === a.studentId?.toString())
     );
     
     const presentCount = classAttendance.filter(a => a.status === 'present').length;
@@ -135,9 +135,35 @@ export default function ReportsPage() {
     };
   });
 
+  // Calculate monthly statistics by class
+  const monthlyByClass: ClassReport[] = classes.map(cls => {
+    const classStudents = students.filter(s => s.classId === cls._id);
+    const classAttendance = attendance.filter(a =>
+      classStudents.some(s => s._id === a.studentId || s._id?.toString() === a.studentId?.toString())
+    );
+
+    const presentCount = classAttendance.filter(a => a.status === 'present').length;
+    const absentCount = classAttendance.filter(a => a.status === 'absent').length;
+    const lateCount = classAttendance.filter(a => a.status === 'late').length;
+    const total = presentCount + absentCount + lateCount;
+    const attendanceRate = total > 0 ? (presentCount / total) * 100 : 0;
+
+    return {
+      classId: cls._id,
+      className: cls.name,
+      totalStudents: classStudents.length,
+      presentCount,
+      absentCount,
+      lateCount,
+      attendanceRate,
+    };
+  });
+
   // Calculate student reports
   const studentReports: StudentReport[] = students.map(student => {
-    const studentAttendance = attendance.filter(a => a.studentId === student._id);
+    const studentAttendance = attendance.filter(a => 
+      a.studentId === student._id || a.studentId?.toString() === student._id?.toString()
+    );
     const presentCount = studentAttendance.filter(a => a.status === 'present').length;
     const absentCount = studentAttendance.filter(a => a.status === 'absent').length;
     const lateCount = studentAttendance.filter(a => a.status === 'late').length;
@@ -649,7 +675,7 @@ export default function ReportsPage() {
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Monthly Statistics by Class</h2>
             </div>
 
-            {dailyByClass.length === 0 ? (
+            {monthlyByClass.length === 0 ? (
               <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-12 text-center">
                 <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
                   <span className="text-3xl">📊</span>
@@ -658,7 +684,7 @@ export default function ReportsPage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {dailyByClass.map((classData) => (
+                {monthlyByClass.map((classData) => (
                   <div 
                     key={classData.classId} 
                     onClick={() => handleClassClick(classData)}
