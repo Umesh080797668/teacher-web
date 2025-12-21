@@ -96,6 +96,7 @@ export default function UnifiedDashboard() {
               classes: classesRes.data,
               students: studentsRes.data,
               todayAttendance,
+              monthlyAttendance: attendanceRes.data, // Store full monthly attendance
               isExpanded: false, // Will be merged with current state
             };
           } catch (error) {

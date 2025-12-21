@@ -4,5 +4,6 @@ export interface UnifiedTeacherData extends ActiveTeacherData {
   classes: Class[];
   students: Student[];
   todayAttendance: Attendance[];
+  monthlyAttendance: Attendance[]; // Full monthly attendance data
   isExpanded: boolean;
 }

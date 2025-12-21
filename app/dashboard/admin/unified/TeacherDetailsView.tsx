@@ -11,6 +11,7 @@ interface UnifiedTeacherData extends ActiveTeacherData {
   classes: Class[];
   students: Student[];
   todayAttendance: Attendance[];
+  monthlyAttendance: Attendance[]; // Full monthly attendance data
   isExpanded: boolean;
 }
 
@@ -51,6 +52,12 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
   const [loadingDailyAttendance, setLoadingDailyAttendance] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Class details modal state
+  const [showClassDetailsModal, setShowClassDetailsModal] = useState(false);
+  const [selectedClassForModal, setSelectedClassForModal] = useState<Class | null>(null);
+  const [classStudentDetails, setClassStudentDetails] = useState<any[]>([]);
+  const [loadingClassDetails, setLoadingClassDetails] = useState(false);
 
   // Payment Tab State
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
@@ -204,6 +211,44 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
     }
   };
 
+  // Handle class card click to show student details modal
+  const handleClassClick = (classData: any) => {
+    setSelectedClassForModal(classData);
+    setShowClassDetailsModal(true);
+    setLoadingClassDetails(true);
+
+    // Calculate student details for this class
+    const classStudents = teacher.students.filter(s => s.classId === classData._id);
+    const classAttendance = monthAttendance.filter(a => 
+      classStudents.some(s => s._id === a.studentId || s._id?.toString() === a.studentId?.toString())
+    );
+
+    const studentsDetails = classStudents.map(student => {
+      const studentAttendance = classAttendance.filter(a => 
+        a.studentId?.toString() === student._id?.toString()
+      );
+      const presentCount = studentAttendance.filter(a => a.status === 'present').length;
+      const absentCount = studentAttendance.filter(a => a.status === 'absent').length;
+      const lateCount = studentAttendance.filter(a => a.status === 'late').length;
+      const totalClasses = studentAttendance.length;
+      const attendanceRate = totalClasses > 0 ? (presentCount / totalClasses) * 100 : 0;
+
+      return {
+        studentId: student._id,
+        studentName: student.name,
+        studentIdNumber: student.studentId,
+        presentCount,
+        absentCount,
+        lateCount,
+        totalClasses,
+        attendanceRate
+      };
+    }).sort((a, b) => b.attendanceRate - a.attendanceRate);
+
+    setClassStudentDetails(studentsDetails);
+    setLoadingClassDetails(false);
+  };
+
   const handleAddPayment = async () => {
     try {
       await paymentsApi.create({ 
@@ -228,14 +273,16 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
   const todayLate = todayAttendance.filter(a => a.status === 'late').length;
 
   // Calculate attendance stats for the selected month
-  const monthAttendance = teacher.todayAttendance.filter(att => {
+  const monthAttendance = teacher.monthlyAttendance.filter(att => {
     const attDate = new Date(att.date);
     return attDate.getMonth() + 1 === selectedMonth && attDate.getFullYear() === selectedYear;
   });
 
   // Student reports
   const studentReports = teacher.students.map(student => {
-    const studentAtt = monthAttendance.filter(a => a.studentId === student._id);
+    const studentAtt = monthAttendance.filter(a => 
+      a.studentId === student._id || a.studentId?.toString() === student._id?.toString()
+    );
     const presentCount = studentAtt.filter(a => a.status === 'present').length;
     const absentCount = studentAtt.filter(a => a.status === 'absent').length;
     const lateCount = studentAtt.filter(a => a.status === 'late').length;
@@ -255,8 +302,8 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
   // Class reports
   const classReports = teacher.classes.map(cls => {
     const classStudents = teacher.students.filter(s => s.classId === cls._id);
-    const classAttendance = todayAttendance.filter(a => 
-      classStudents.some(s => s._id === a.studentId)
+    const classAttendance = monthAttendance.filter(a => 
+      classStudents.some(s => s._id === a.studentId || s._id?.toString() === a.studentId?.toString())
     );
     
     const presentCount = classAttendance.filter(a => a.status === 'present').length;
@@ -1128,10 +1175,7 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
                     {classReports.map((classData) => (
                       <div 
                         key={classData._id} 
-                        onClick={() => {
-                          // Show modal with class details
-                          alert(`Feature coming soon: View detailed student attendance for ${classData.name}`);
-                        }}
+                        onClick={() => handleClassClick(classData)}
                         className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:shadow-lg transition-shadow"
                       >
                         <div className="flex items-center justify-between mb-6">
@@ -1372,6 +1416,117 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
                     Add Payment
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Class Student Details Modal */}
+        {showClassDetailsModal && selectedClassForModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+                <div className="flex items-center justify-between text-white">
+                  <div>
+                    <h3 className="text-xl font-bold">{selectedClassForModal.name}</h3>
+                    <p className="text-sm opacity-90">Student Attendance Details - {monthNames[selectedMonth - 1]} {selectedYear}</p>
+                  </div>
+                  <button
+                    onClick={() => setShowClassDetailsModal(false)}
+                    className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+                {loadingClassDetails ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Summary */}
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-6">
+                      <div className="grid grid-cols-2 gap-6">
+                        <div className="text-center">
+                          <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{classStudentDetails.length}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">Total Students</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-gray-900 dark:text-white">{monthNames[selectedMonth - 1]} {selectedYear}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">Period</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Students List */}
+                    {classStudentDetails.length === 0 ? (
+                      <div className="text-center py-12">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <span className="text-3xl">👥</span>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400">No students found in this class</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {classStudentDetails.map((student) => (
+                          <div key={student.studentId} className="bg-gray-50 dark:bg-slate-700 rounded-xl p-5 hover:shadow-md transition-shadow">
+                            <div className="flex items-start justify-between mb-4">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
+                                  <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">
+                                    {student.studentName.charAt(0).toUpperCase()}
+                                  </span>
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-gray-900 dark:text-white">{student.studentName}</h4>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">ID: {student.studentIdNumber}</p>
+                                </div>
+                              </div>
+                              <div className={`px-4 py-2 rounded-full font-bold ${
+                                student.attendanceRate >= 75
+                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                  : student.attendanceRate >= 50
+                                  ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                                  : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                              }`}>
+                                {student.attendanceRate.toFixed(1)}%
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3 mb-3">
+                              <div className="bg-green-100 dark:bg-green-900/20 rounded-lg p-3 text-center">
+                                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{student.presentCount}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Present</p>
+                              </div>
+                              <div className="bg-red-100 dark:bg-red-900/20 rounded-lg p-3 text-center">
+                                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{student.absentCount}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Absent</p>
+                              </div>
+                              <div className="bg-orange-100 dark:bg-orange-900/20 rounded-lg p-3 text-center">
+                                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{student.lateCount}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Late</p>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-center text-sm text-gray-600 dark:text-gray-400">
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              Total classes: {student.totalClasses}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
