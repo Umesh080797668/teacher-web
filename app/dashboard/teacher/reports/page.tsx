@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
-import { attendanceApi, studentsApi, classesApi } from '@/lib/api';
+import { attendanceApi, studentsApi, classesApi, reportsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import type { Attendance, Student, Class, Teacher } from '@/lib/types';
 import Pagination from '@/lib/Pagination';
@@ -27,6 +27,23 @@ interface ClassReport {
   attendanceRate: number;
 }
 
+interface ClassStudentDetails {
+  className: string;
+  totalStudents: number;
+  month: number;
+  year: number;
+  studentsDetails: Array<{
+    studentId: string;
+    studentName: string;
+    studentIdNumber: string;
+    presentCount: number;
+    absentCount: number;
+    lateCount: number;
+    totalClasses: number;
+    attendanceRate: number;
+  }>;
+}
+
 export default function ReportsPage() {
   const router = useRouter();
   const { user, userType, isAuthenticated } = useAuthStore();
@@ -42,6 +59,12 @@ export default function ReportsPage() {
   // Pagination states
   const [studentsReportsCurrentPage, setStudentsReportsCurrentPage] = useState(1);
   const STUDENTS_REPORTS_PER_PAGE = 10;
+
+  // Modal states
+  const [showClassDetailsModal, setShowClassDetailsModal] = useState(false);
+  const [selectedClassForModal, setSelectedClassForModal] = useState<ClassReport | null>(null);
+  const [classDetailsData, setClassDetailsData] = useState<ClassStudentDetails | null>(null);
+  const [isLoadingClassDetails, setIsLoadingClassDetails] = useState(false);
 
   const teacher = user as Teacher;
   const teacherId = teacher?.teacherId;
@@ -135,6 +158,28 @@ export default function ReportsPage() {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
+
+  // Handle class card click to show details modal
+  const handleClassClick = async (classReport: ClassReport) => {
+    setSelectedClassForModal(classReport);
+    setShowClassDetailsModal(true);
+    setIsLoadingClassDetails(true);
+    setClassDetailsData(null);
+
+    try {
+      const response = await reportsApi.getClassStudentDetails({
+        classId: classReport.classId,
+        month: selectedMonth,
+        year: selectedYear,
+      });
+      setClassDetailsData(response.data);
+    } catch (error) {
+      console.error('Error loading class details:', error);
+      toast.error('Failed to load class details');
+    } finally {
+      setIsLoadingClassDetails(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -614,12 +659,21 @@ export default function ReportsPage() {
             ) : (
               <div className="space-y-6">
                 {dailyByClass.map((classData) => (
-                  <div key={classData.classId} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+                  <div 
+                    key={classData.classId} 
+                    onClick={() => handleClassClick(classData)}
+                    className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                  >
                     <div className="flex items-center justify-between mb-6">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{classData.className}</h3>
-                      <span className="px-3 py-1 bg-indigo-100 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-full text-sm font-medium">
-                        {classData.totalStudents} Students
-                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-3 py-1 bg-indigo-100 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-full text-sm font-medium">
+                          {classData.totalStudents} Students
+                        </span>
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-6">
@@ -662,6 +716,121 @@ export default function ReportsPage() {
           </div>
         )}
       </main>
+
+      {/* Class Student Details Modal */}
+      {showClassDetailsModal && selectedClassForModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
+              <div className="flex items-center justify-between text-white">
+                <div>
+                  <h3 className="text-xl font-bold">{selectedClassForModal.className}</h3>
+                  <p className="text-sm opacity-90">Student Attendance Details - {monthNames[selectedMonth - 1]} {selectedYear}</p>
+                </div>
+                <button
+                  onClick={() => setShowClassDetailsModal(false)}
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              {isLoadingClassDetails ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                </div>
+              ) : classDetailsData ? (
+                <div className="space-y-6">
+                  {/* Summary */}
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-6">
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="text-center">
+                        <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{classDetailsData.totalStudents}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">Total Students</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{monthNames[classDetailsData.month - 1]} {classDetailsData.year}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">Period</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Students List */}
+                  {classDetailsData.studentsDetails.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-3xl">👥</span>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-400">No students found in this class</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {classDetailsData.studentsDetails.map((student) => (
+                        <div key={student.studentId} className="bg-gray-50 dark:bg-slate-700 rounded-xl p-5 hover:shadow-md transition-shadow">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
+                                <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">
+                                  {student.studentName.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-gray-900 dark:text-white">{student.studentName}</h4>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">ID: {student.studentIdNumber}</p>
+                              </div>
+                            </div>
+                            <div className={`px-4 py-2 rounded-full font-bold ${
+                              student.attendanceRate >= 75
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                                : student.attendanceRate >= 50
+                                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                            }`}>
+                              {student.attendanceRate.toFixed(1)}%
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-3 mb-3">
+                            <div className="bg-green-100 dark:bg-green-900/20 rounded-lg p-3 text-center">
+                              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{student.presentCount}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Present</p>
+                            </div>
+                            <div className="bg-red-100 dark:bg-red-900/20 rounded-lg p-3 text-center">
+                              <p className="text-2xl font-bold text-red-600 dark:text-red-400">{student.absentCount}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Absent</p>
+                            </div>
+                            <div className="bg-orange-100 dark:bg-orange-900/20 rounded-lg p-3 text-center">
+                              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{student.lateCount}</p>
+                              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Late</p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-center text-sm text-gray-600 dark:text-gray-400">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Total classes: {student.totalClasses}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-gray-600 dark:text-gray-400">No data available</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

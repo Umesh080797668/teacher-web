@@ -1126,12 +1126,24 @@ export default function TeacherDetailsView({ teacher, onMarkAttendance, onRefres
                 ) : (
                   <div className="space-y-6">
                     {classReports.map((classData) => (
-                      <div key={classData._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+                      <div 
+                        key={classData._id} 
+                        onClick={() => {
+                          // Show modal with class details
+                          alert(`Feature coming soon: View detailed student attendance for ${classData.name}`);
+                        }}
+                        className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 cursor-pointer hover:shadow-lg transition-shadow"
+                      >
                         <div className="flex items-center justify-between mb-6">
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{classData.name}</h3>
-                          <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-sm font-medium">
-                            {classData.totalStudents} Students
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full text-sm font-medium">
+                              {classData.totalStudents} Students
+                            </span>
+                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-3 gap-6">

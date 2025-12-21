@@ -86,6 +86,8 @@ export const reportsApi = {
     api.get('/api/reports/attendance-summary', { params }),
   getStudentReports: (params: { month: number; year: number; teacherId?: string }) =>
     api.get('/api/reports/student-reports', { params }),
+  getClassStudentDetails: (params: { classId: string; month: number; year: number }) =>
+    api.get('/api/reports/class-student-details', { params }),
 };
 
 // Web Session API
