@@ -7,7 +7,7 @@
 
 [build.environment]
   NODE_VERSION = "20.9.0"
-  NEXT_PUBLIC_API_URL = "https://teacher-eight-chi.vercel.app"
+  MONGODB_URI = "your-mongodb-connection-string"
   NEXT_PUBLIC_APP_URL = "https://your-netlify-app-url.netlify.app"
   NEXT_PUBLIC_WS_URL = "wss://teacher-eight-chi.vercel.app"
 
