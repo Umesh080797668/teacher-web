@@ -438,7 +438,25 @@ export default function TeacherDashboardPage() {
             {/* Quick Actions */}
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <button
+                  onClick={() => setActiveTab('classes')}
+                  className="p-6 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-xl hover:shadow-lg transition transform hover:-translate-y-1"
+                >
+                  <div className="text-4xl mb-3">📚</div>
+                  <h3 className="font-semibold text-lg mb-1">Classes</h3>
+                  <p className="text-sm text-teal-100">Manage class schedules</p>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('students')}
+                  className="p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition transform hover:-translate-y-1"
+                >
+                  <div className="text-4xl mb-3">👥</div>
+                  <h3 className="font-semibold text-lg mb-1">Students</h3>
+                  <p className="text-sm text-purple-100">Manage student records</p>
+                </button>
+
                 <button
                   onClick={() => setActiveTab('attendance')}
                   className="p-6 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl hover:shadow-lg transition transform hover:-translate-y-1"
@@ -446,6 +464,15 @@ export default function TeacherDashboardPage() {
                   <div className="text-4xl mb-3">✓</div>
                   <h3 className="font-semibold text-lg mb-1">Mark Attendance</h3>
                   <p className="text-sm text-blue-100">Record daily attendance</p>
+                </button>
+
+                <button
+                  onClick={() => router.push('/dashboard/teacher/payments')}
+                  className="p-6 bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-xl hover:shadow-lg transition transform hover:-translate-y-1"
+                >
+                  <div className="text-4xl mb-3">💰</div>
+                  <h3 className="font-semibold text-lg mb-1">Payments</h3>
+                  <p className="text-sm text-indigo-100">Manage student payments</p>
                 </button>
 
                 <button
@@ -458,21 +485,12 @@ export default function TeacherDashboardPage() {
                 </button>
 
                 <button
-                  onClick={() => router.push('/dashboard/teacher/payments')}
-                  className="p-6 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl hover:shadow-lg transition transform hover:-translate-y-1"
-                >
-                  <div className="text-4xl mb-3">💰</div>
-                  <h3 className="font-semibold text-lg mb-1">Payments</h3>
-                  <p className="text-sm text-purple-100">Manage student payments</p>
-                </button>
-
-                <button
                   onClick={() => router.push('/dashboard/teacher/reports')}
-                  className="p-6 bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl hover:shadow-lg transition transform hover:-translate-y-1"
+                  className="p-6 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl hover:shadow-lg transition transform hover:-translate-y-1"
                 >
                   <div className="text-4xl mb-3">📈</div>
                   <h3 className="font-semibold text-lg mb-1">Reports</h3>
-                  <p className="text-sm text-orange-100">View analytics & reports</p>
+                  <p className="text-sm text-red-100">View analytics & reports</p>
                 </button>
               </div>
             </div>
