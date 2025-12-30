@@ -4,14 +4,15 @@ import Teacher from '@/lib/models/Teacher';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await dbConnect();
+    const { id } = await params;
     const { status } = await request.json();
 
     const updatedTeacher = await Teacher.findByIdAndUpdate(
-      params.id,
+      id,
       { status },
       { new: true }
     );
