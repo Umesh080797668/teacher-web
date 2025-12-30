@@ -45,6 +45,7 @@ export interface Payment {
   amount: number;
   type: 'full' | 'half' | 'free';
   date: string;
+  month?: number;
   createdAt?: string;
 }
 
