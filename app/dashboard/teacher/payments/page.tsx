@@ -494,7 +494,7 @@ export default function PaymentsPage() {
                         </div>
                         <button
                           onClick={() => setDeletePaymentId(payment._id)}
-                          className="opacity-0 group-hover:opacity-100 p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
+                          className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition"
                           title="Delete Payment"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

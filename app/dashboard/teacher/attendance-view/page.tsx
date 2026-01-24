@@ -184,7 +184,7 @@ function DailyViewTab({
 
   // Group by class
   const classGroups = dailyAttendance.reduce((acc, record) => {
-    const student = students.find(s => s._id === record.studentId);
+    const student = students.find(s => s._id === record.studentId || s.studentId === record.studentId);
     const classInfo = classes.find(c => c._id === student?.classId);
     const className = classInfo?.name || 'Unknown Class';
 
@@ -468,7 +468,7 @@ function MonthlyStatsTab({
 
   // Group by class and calculate monthly stats
   const classMonthlyStats = monthlyAttendance.reduce((acc, record) => {
-    const student = students.find(s => s._id === record.studentId);
+    const student = students.find(s => s._id === record.studentId || s.studentId === record.studentId);
     const classInfo = classes.find(c => c._id === student?.classId);
     const className = classInfo?.name || 'Unknown Class';
 
