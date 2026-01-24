@@ -170,16 +170,20 @@ function TeacherDashboardContent() {
       // Calculate today's attendance percentage
       const today = new Date().toISOString().split('T')[0];
       const todayAttendance = attendanceRes.data.filter(record => 
-        record.date.startsWith(today) && record.status === 'present'
+        record.date.slice(0, 10) === today
       );
-      const uniquePresentStudents = new Set(todayAttendance.map(record => record.studentId));
-      const attendancePercentage = studentsRes.data.length > 0 
-        ? Math.round((uniquePresentStudents.size / studentsRes.data.length) * 100) 
+      const presentCount = todayAttendance.filter(record => record.status === 'present').length;
+      const attendancePercentage = todayAttendance.length > 0 
+        ? Math.round((presentCount / todayAttendance.length) * 100) 
         : 0;
       setTodayAttendancePercentage(attendancePercentage);
 
-      // Calculate payment status percentage (students with at least one payment)
-      const studentsWithPayments = new Set(paymentsRes.data.map(payment => payment.studentId));
+      // Calculate payment status percentage (students who paid this month)
+      const thisMonthPayments = paymentsRes.data.filter(payment => {
+        const paymentDate = new Date(payment.date);
+        return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+      });
+      const studentsWithPayments = new Set(thisMonthPayments.map(payment => payment.studentId));
       const paymentPercentage = studentsRes.data.length > 0 
         ? Math.round((studentsWithPayments.size / studentsRes.data.length) * 100) 
         : 0;
