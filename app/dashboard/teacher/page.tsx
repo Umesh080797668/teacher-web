@@ -812,6 +812,19 @@ function TeacherDashboardContent() {
                 })()}
               </div>
 
+              {/* Empty state for Classes */}
+              {filteredClasses.length === 0 && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No classes found</h3>
+                  <p className="text-gray-600 dark:text-gray-400">No classes match your search. Try a different search term.</p>
+                </div>
+              )}
+
               {/* Pagination for Classes */}
               {classes.filter(cls => cls.name.toLowerCase().includes(searchQuery.toLowerCase())).length > CLASSES_PER_PAGE && (
                 <div className="flex justify-center">
@@ -1081,9 +1094,18 @@ function TeacherDashboardContent() {
 
                         <div className="flex space-x-2">
                           <button
-                            onClick={() => setAttendanceRecords({ ...attendanceRecords, [student._id]: 'present' })}
+                            onClick={() => {
+                              const current = attendanceRecords[student.studentId];
+                              const newRecords = { ...attendanceRecords };
+                              if (current === 'present') {
+                                delete newRecords[student.studentId];
+                              } else {
+                                newRecords[student.studentId] = 'present';
+                              }
+                              setAttendanceRecords(newRecords);
+                            }}
                             className={`px-4 py-2 rounded-full font-medium transition-all ${
-                              attendanceRecords[student._id] === 'present'
+                              attendanceRecords[student.studentId] === 'present'
                                 ? 'bg-green-600 text-white shadow-lg scale-105'
                                 : 'bg-green-50 text-green-600 border-2 border-green-200 hover:bg-green-100'
                             }`}
@@ -1096,9 +1118,18 @@ function TeacherDashboardContent() {
                             </span>
                           </button>
                           <button
-                            onClick={() => setAttendanceRecords({ ...attendanceRecords, [student._id]: 'absent' })}
+                            onClick={() => {
+                              const current = attendanceRecords[student.studentId];
+                              const newRecords = { ...attendanceRecords };
+                              if (current === 'absent') {
+                                delete newRecords[student.studentId];
+                              } else {
+                                newRecords[student.studentId] = 'absent';
+                              }
+                              setAttendanceRecords(newRecords);
+                            }}
                             className={`px-4 py-2 rounded-full font-medium transition-all ${
-                              attendanceRecords[student._id] === 'absent'
+                              attendanceRecords[student.studentId] === 'absent'
                                 ? 'bg-red-600 text-white shadow-lg scale-105'
                                 : 'bg-red-50 text-red-600 border-2 border-red-200 hover:bg-red-100'
                             }`}
@@ -1111,9 +1142,18 @@ function TeacherDashboardContent() {
                             </span>
                           </button>
                           <button
-                            onClick={() => setAttendanceRecords({ ...attendanceRecords, [student._id]: 'late' })}
+                            onClick={() => {
+                              const current = attendanceRecords[student.studentId];
+                              const newRecords = { ...attendanceRecords };
+                              if (current === 'late') {
+                                delete newRecords[student.studentId];
+                              } else {
+                                newRecords[student.studentId] = 'late';
+                              }
+                              setAttendanceRecords(newRecords);
+                            }}
                             className={`px-4 py-2 rounded-full font-medium transition-all ${
-                              attendanceRecords[student._id] === 'late'
+                              attendanceRecords[student.studentId] === 'late'
                                 ? 'bg-orange-600 text-white shadow-lg scale-105'
                                 : 'bg-orange-50 text-orange-600 border-2 border-orange-200 hover:bg-orange-100'
                             }`}
@@ -1130,6 +1170,27 @@ function TeacherDashboardContent() {
                     </div>
                   ))}
                 </div>
+
+                {/* Empty state for Attendance search */}
+                {(() => {
+                  const filteredStudents = getClassStudents(selectedClass._id)
+                    .filter(s => {
+                      if (!searchQuery) return true;
+                      const query = searchQuery.toLowerCase();
+                      return s.name.toLowerCase().includes(query) || s.studentId.toLowerCase().includes(query);
+                    });
+                  return filteredStudents.length === 0 ? (
+                    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No students found</h3>
+                      <p className="text-gray-600 dark:text-gray-400">No students match your search. Try a different search term.</p>
+                    </div>
+                  ) : null;
+                })()}
 
                 {getClassStudents(selectedClass._id)
                      .filter(s => {
