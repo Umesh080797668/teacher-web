@@ -10,7 +10,7 @@ import toast from 'react-hot-toast';
 import type { Class, Student, Attendance, Payment, Teacher } from '@/lib/types';
 import Pagination from '@/lib/Pagination';
 
-export default function TeacherDashboardPage() {
+function TeacherDashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, userType, isAuthenticated, logout, session, isHydrated } = useAuthStore();
@@ -1024,5 +1024,20 @@ export default function TeacherDashboardPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TeacherDashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
+        </div>
+      </div>
+    }>
+      <TeacherDashboardContent />
+    </Suspense>
   );
 }
