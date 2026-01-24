@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import TeacherNavigation from '@/components/TeacherNavigation';
 import {
   BarChart,
   Bar,
@@ -259,20 +260,25 @@ export default function ReportsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Loading reports...</span>
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <TeacherNavigation />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2">Loading reports...</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Reports & Analytics</h2>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <TeacherNavigation />
+      <main className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="flex items-center justify-between space-y-2">
+          <h2 className="text-3xl font-bold tracking-tight">Reports & Analytics</h2>
+        </div>
 
-      <Tabs defaultValue="summary" className="space-y-4">
+        <Tabs defaultValue="summary" className="space-y-4">
         <TabsList>
           <TabsTrigger value="summary">Attendance Summary</TabsTrigger>
           <TabsTrigger value="students">Student Reports</TabsTrigger>
@@ -311,6 +317,7 @@ export default function ReportsPage() {
           />
         </TabsContent>
       </Tabs>
+      </main>
     </div>
   );
 }
