@@ -68,10 +68,10 @@ export default function PaymentsPage() {
     loadData();
   }, [isAuthenticated, userType, router]);
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     if (!teacherId) return;
     
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     try {
       const [paymentsRes, studentsRes, classesRes] = await Promise.all([
         paymentsApi.getAll({ teacherId }),
@@ -86,7 +86,7 @@ export default function PaymentsPage() {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -143,13 +143,22 @@ export default function PaymentsPage() {
 
   const handleDeletePayment = async (paymentId: string) => {
     try {
+      // Close modal immediately and locally remove item for responsiveness
+      setDeletePaymentId(null);
+      
+      // Optimistic update
+      setPayments(prev => prev.filter(p => p._id !== paymentId));
+
       await paymentsApi.delete(paymentId);
       toast.success('Payment deleted successfully');
-      loadData();
-      setDeletePaymentId(null);
+      
+      // Silent refresh to ensure sync
+      loadData(true);
     } catch (error: any) {
       console.error('Error deleting payment:', error);
       toast.error(error.response?.data?.error || 'Failed to delete payment');
+      // Revert optimistic update (reload data) if failed
+      loadData(true);
     }
   };
 
