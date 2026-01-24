@@ -1069,3 +1069,5 @@ function TeacherDashboardContent() {
     </div>
   );
 }
+
+export default TeacherDashboardContent;
