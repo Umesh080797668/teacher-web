@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import TeacherNavigation from '@/components/TeacherNavigation';
 import { useAuthStore } from '@/lib/store';
@@ -35,6 +35,7 @@ function TeacherDashboardContent() {
     const tab = searchParams?.get('tab');
     if (tab && ['overview', 'classes', 'students', 'attendance'].includes(tab)) {
       setActiveTab(tab as any);
+      setSearchQuery(''); // Clear search query when tab changes
     }
   }, [searchParams]);
 
@@ -54,6 +55,31 @@ function TeacherDashboardContent() {
   const [newClass, setNewClass] = useState({
     name: '',
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [serverAttendanceRecords, setServerAttendanceRecords] = useState<Record<string, 'present' | 'absent' | 'late'>>({});
+  const [pollingTimer, setPollingTimer] = useState<NodeJS.Timeout | null>(null);
+  
+  // Ref for polling state
+  const pollingStateRef = useRef({
+    attendanceRecords,
+    serverAttendanceRecords,
+    isSaving,
+    searchQuery,
+    selectedClass,
+    attendanceDate
+  });
+
+  useEffect(() => {
+    pollingStateRef.current = {
+        attendanceRecords,
+        serverAttendanceRecords,
+        isSaving,
+        searchQuery,
+        selectedClass,
+        attendanceDate
+    };
+  }, [attendanceRecords, serverAttendanceRecords, isSaving, searchQuery, selectedClass, attendanceDate]);
 
   // Pagination states
   const [studentsCurrentPage, setStudentsCurrentPage] = useState(1);
@@ -280,31 +306,58 @@ function TeacherDashboardContent() {
       return;
     }
 
-    const classStudents = students.filter(s => s.classId === selectedClass._id);
-    const recordsToSave = classStudents
-      .filter(s => attendanceRecords[s._id])
-      .map(s => ({
-        studentId: s._id,
-        date: new Date(attendanceDate).toISOString(),
-        status: attendanceRecords[s._id],
-        session: 'daily',
-        month: new Date(attendanceDate).getMonth() + 1,
-        year: new Date(attendanceDate).getFullYear(),
-      }));
-
-    if (recordsToSave.length === 0) {
-      toast.error('Please mark attendance for at least one student');
-      return;
+    if (!hasUnsavedChanges(attendanceRecords, serverAttendanceRecords)) {
+         toast('No changes to save.', { icon: 'ℹ️' });
+         return;
     }
 
+    setIsSaving(true);
+
     try {
+      const classStudents = students.filter(s => s.classId === selectedClass._id);
+      const dateObj = new Date(attendanceDate);
+      const month = dateObj.getMonth() + 1;
+      const year = dateObj.getFullYear();
+      
+      // Auto-mark absent logic: copy current records
+      const updatedRecords = { ...attendanceRecords };
+
+      classStudents.forEach(s => {
+          // If student has no status in local records and no status in server records
+          // Then they should be marked as absent (default)
+          if (!updatedRecords[s._id] && !serverAttendanceRecords[s._id]) {
+              updatedRecords[s._id] = 'absent';
+          }
+      });
+      
+      const recordsToSave = classStudents
+        .filter(s => updatedRecords[s._id])
+        .map(s => ({
+          studentId: s._id,
+          date: dateObj.toISOString(),
+          status: updatedRecords[s._id],
+          session: 'daily',
+          month,
+          year,
+        }));
+
+      if (recordsToSave.length === 0) {
+        toast.error('Please mark attendance for at least one student');
+        setIsSaving(false);
+        return;
+      }
+
       await attendanceApi.bulkCreate(recordsToSave);
-      toast.success('Attendance marked successfully');
-      setAttendanceRecords({});
-      loadData(true);
+      toast.success('Attendance saved successfully');
+      
+      setAttendanceRecords(updatedRecords);
+      setServerAttendanceRecords(updatedRecords);
+      
     } catch (error: any) {
       console.error('Error marking attendance:', error);
       toast.error(error.response?.data?.error || 'Failed to mark attendance');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -340,6 +393,102 @@ function TeacherDashboardContent() {
   const getClassStudents = (classId: string) => {
     return students.filter(s => s.classId === classId);
   };
+
+  // --- Attendance Logic Start ---
+
+  const hasUnsavedChanges = (currentRecords: any, serverRecords: any) => {
+    const localKeys = Object.keys(currentRecords);
+    const serverKeys = Object.keys(serverRecords);
+    
+    for (const key of localKeys) {
+        if (currentRecords[key] !== serverRecords[key]) return true;
+    }
+    
+    for (const key of serverKeys) {
+        if (!currentRecords[key]) return true;
+    }
+    
+    return false;
+  };
+
+  const loadAttendanceData = async (isPolling = false) => {
+    const currentState = pollingStateRef.current;
+    const cls = isPolling ? currentState.selectedClass : selectedClass;
+    const dateStr = isPolling ? currentState.attendanceDate : attendanceDate;
+    const tId = teacherId;
+
+    if (!cls || !tId) return;
+
+    if (!isPolling) setIsLoading(true);
+
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return;
+      
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
+
+      const response = await attendanceApi.getAll({
+        teacherId: tId,
+        month,
+        year
+      });
+
+      const records: Record<string, 'present' | 'absent' | 'late'> = {};
+      
+      const classStudents = students.filter(s => s.classId === cls._id);
+      const classStudentIds = new Set(classStudents.map(s => s.studentId));
+
+      response.data.forEach((record) => {
+        const recordDate = new Date(record.date).toISOString().split('T')[0];
+        if (recordDate === dateStr && classStudentIds.has(record.studentId)) {
+           records[record.studentId] = record.status as 'present' | 'absent' | 'late';
+        }
+      });
+
+      if (isPolling) {
+         const currentRef = pollingStateRef.current;
+         if (currentRef.isSaving || currentRef.searchQuery) return;
+         if (hasUnsavedChanges(currentRef.attendanceRecords, currentRef.serverAttendanceRecords)) return;
+
+         const isDifferent = JSON.stringify(records) !== JSON.stringify(currentRef.serverAttendanceRecords);
+         if (isDifferent) {
+             setServerAttendanceRecords(records);
+             setAttendanceRecords(records);
+         }
+      } else {
+         setServerAttendanceRecords(records);
+         setAttendanceRecords(records);
+      }
+
+    } catch (error) {
+      console.error('Error loading attendance:', error);
+      if (!isPolling) toast.error('Failed to load attendance');
+    } finally {
+      if (!isPolling) setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+
+    if (activeTab === 'attendance') {
+        if (selectedClass && attendanceDate) {
+            loadAttendanceData(false);
+        }
+
+        interval = setInterval(() => {
+            loadAttendanceData(true);
+        }, 10000);
+    }
+    
+    return () => {
+        if (interval) clearInterval(interval);
+    };
+  }, [activeTab, selectedClass?._id, attendanceDate, students]);
+
+  // --- Attendance Logic End ---
+
 
   if (isLoading) {
     return (
@@ -531,12 +680,33 @@ function TeacherDashboardContent() {
               </button>
             </div>
 
+            {/* Search Bar */}
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Search classes..."
+                  />
+                </div>
+            </div>
+
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {(() => {
+                  const filteredClasses = classes.filter(cls => 
+                      cls.name.toLowerCase().includes(searchQuery.toLowerCase())
+                  );
                   const startIndex = (classesCurrentPage - 1) * CLASSES_PER_PAGE;
                   const endIndex = startIndex + CLASSES_PER_PAGE;
-                  const paginatedClasses = classes.slice(startIndex, endIndex);
+                  const paginatedClasses = filteredClasses.slice(startIndex, endIndex);
 
                   return paginatedClasses.map((cls) => {
                     const classStudents = getClassStudents(cls._id);
@@ -643,11 +813,11 @@ function TeacherDashboardContent() {
               </div>
 
               {/* Pagination for Classes */}
-              {classes.length > CLASSES_PER_PAGE && (
+              {classes.filter(cls => cls.name.toLowerCase().includes(searchQuery.toLowerCase())).length > CLASSES_PER_PAGE && (
                 <div className="flex justify-center">
                   <Pagination
                     currentPage={classesCurrentPage}
-                    totalItems={classes.length}
+                    totalItems={classes.filter(cls => cls.name.toLowerCase().includes(searchQuery.toLowerCase())).length}
                     itemsPerPage={CLASSES_PER_PAGE}
                     onPageChange={setClassesCurrentPage}
                   />
@@ -870,11 +1040,29 @@ function TeacherDashboardContent() {
               </div>
             )}
 
+            {/* Search Bar */}
+            {selectedClass && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="Search students by name or ID..."
+                  />
+              </div>
+            )}
+
             {/* Students List */}
             {selectedClass ? (
               <>
                 <div className="space-y-3">
                   {getClassStudents(selectedClass._id)
+                    .filter(s => {
+                      if (!searchQuery) return true;
+                      const query = searchQuery.toLowerCase();
+                      return s.name.toLowerCase().includes(query) || s.studentId.toLowerCase().includes(query);
+                    })
                     .slice((attendanceCurrentPage - 1) * ATTENDANCE_PER_PAGE, attendanceCurrentPage * ATTENDANCE_PER_PAGE)
                     .map((student) => (
                     <div key={student._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
@@ -943,10 +1131,20 @@ function TeacherDashboardContent() {
                   ))}
                 </div>
 
-                {getClassStudents(selectedClass._id).length > ATTENDANCE_PER_PAGE && (
+                {getClassStudents(selectedClass._id)
+                     .filter(s => {
+                      if (!searchQuery) return true;
+                      const query = searchQuery.toLowerCase();
+                      return s.name.toLowerCase().includes(query) || s.studentId.toLowerCase().includes(query);
+                    }).length > ATTENDANCE_PER_PAGE && (
                   <Pagination
                     currentPage={attendanceCurrentPage}
-                    totalItems={getClassStudents(selectedClass._id).length}
+                    totalItems={getClassStudents(selectedClass._id)
+                     .filter(s => {
+                      if (!searchQuery) return true;
+                      const query = searchQuery.toLowerCase();
+                      return s.name.toLowerCase().includes(query) || s.studentId.toLowerCase().includes(query);
+                    }).length}
                     itemsPerPage={ATTENDANCE_PER_PAGE}
                     onPageChange={setAttendanceCurrentPage}
                   />
