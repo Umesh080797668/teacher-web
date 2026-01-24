@@ -90,7 +90,7 @@ function ClassDetailsContent() {
 
     students.forEach(student => {
       const studentAttendance = attendanceRecords.filter(
-        record => record.studentId === student._id
+        record => record.studentId === student.studentId
       );
       totalRecords += studentAttendance.length;
       presentCount += studentAttendance.filter(
@@ -312,7 +312,7 @@ function ClassDetailsContent() {
                 const paginatedStudents = students.slice(startIndex, endIndex);
 
                 return paginatedStudents.map((student) => {
-                  const attendanceRate = getStudentAttendanceRate(student._id);
+                  const attendanceRate = getStudentAttendanceRate(student.studentId);
                   
                   return (
                     <div key={student._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition">
