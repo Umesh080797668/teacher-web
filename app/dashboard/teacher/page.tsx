@@ -543,14 +543,20 @@ function TeacherDashboardContent() {
                     
                     // Calculate monthly attendance rate
                     const now = new Date();
-                    const currentMonth = now.getMonth();
+                    const currentMonth = now.getMonth() + 1; // Use 1-based month to match DB
                     const currentYear = now.getFullYear();
                     
                     const classStudentIds = new Set(classStudents.map(s => s._id));
                     const classMonthAttendance = allAttendance.filter(record => {
+                       if (record.month && record.year) {
+                         return classStudentIds.has(record.studentId) && 
+                                record.month === currentMonth && 
+                                record.year === currentYear;
+                       }
+                       // Fallback for old records
                        const recordDate = new Date(record.date);
                        return classStudentIds.has(record.studentId) && 
-                              recordDate.getMonth() === currentMonth && 
+                              (recordDate.getMonth() + 1) === currentMonth && 
                               recordDate.getFullYear() === currentYear;
                     });
                     
