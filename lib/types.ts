@@ -44,8 +44,10 @@ export interface Payment {
   classId: string;
   amount: number;
   type: 'full' | 'half' | 'free';
-  date: string;
+  date: string; // Used as recordingDate in some contexts or month/year identifier
+  recordingDate?: string;
   month?: number;
+  year?: number;
   createdAt?: string;
 }
 
