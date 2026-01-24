@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import TeacherNavigation from '@/components/TeacherNavigation';
 import { useAuthStore } from '@/lib/store';
 import { paymentsApi, studentsApi, classesApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -182,31 +183,11 @@ export default function PaymentsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.back()}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Payments</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Manage student payments</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TeacherNavigation activeTab="payments" />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl shadow-lg p-6 mb-8">
+        <div className="bg-gradient-to-br from-primary to-primary-dark rounded-3xl shadow-lg p-6 mb-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="bg-white bg-opacity-20 backdrop-blur-sm rounded-2xl p-6">
               <div className="flex items-center justify-between">
@@ -253,7 +234,7 @@ export default function PaymentsPage() {
           {!showForm ? (
             <button
               onClick={() => setShowForm(true)}
-              className="w-full py-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-lg shadow-lg"
+              className="w-full py-4 bg-primary text-white rounded-xl hover:bg-primary-dark transition font-medium text-lg shadow-lg"
             >
               + Record New Payment
             </button>

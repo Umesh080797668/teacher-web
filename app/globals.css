@@ -3,38 +3,112 @@
 @variant dark (.dark &);
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --card-bg: #ffffff;
-  --border-color: #e5e7eb;
-  --input-bg: #ffffff;
-  --input-border: #d1d5db;
-  --modal-bg: #ffffff;
+  /* Core Base Colors */
+  --background: #FFFBFE; /* Mobile app background */
+  --foreground: #1C1B1F; /* Material Design standard text */
+  
+  /* Primary Brand Colors */
+  --primary: #6750A4;
+  --primary-foreground: #FFFFFF;
+  --primary-light: #E8DEF8;
+  --primary-dark: #4F378B;
+  
+  /* Secondary/Accent Colors */
+  --secondary: #625B71;
+  --secondary-foreground: #FFFFFF;
+  --accent: #7D5260;
+  
+  /* UI Element Colors */
+  --card-bg: #FFFFFF;
+  --card-border: #E7E0EC;
+  --input-bg: #FFFFFF;
+  --input-border: #79747E;
+  --modal-bg: #FFFFFF;
+
+  --border-color: #E7E0EC;
+  
+  /* Status Colors */
+  --success: #00C853;
+  --error: #B3261E;
+  --warning: #FF6F00;
+  --info: #00BFA5;
+  
+  /* Attendance Specific */
+  --present: #4CAF50;
+  --absent: #E53935;
+  --late: #FF9800;
+
+  font-family: 'Poppins', Arial, Helvetica, sans-serif;
 }
 
 [data-theme="dark"],
 .dark {
-  --background: #0f172a;
-  --foreground: #e2e8f0;
-  --card-bg: #1e293b;
-  --border-color: #334155;
-  --input-bg: #1e293b;
-  --input-border: #475569;
-  --modal-bg: #1e293b;
+  /* Dark Mode Colors - Material Design 3 Dark Theme */
+  --background: #1C1B1F;
+  --foreground: #E6E1E5;
+  
+  --primary: #D0BCFF;
+  --primary-foreground: #381E72;
+  --primary-light: #4F378B;
+  --primary-dark: #D0BCFF;
+  
+  --secondary: #CCC2DC;
+  --secondary-foreground: #332D41;
+  
+  --card-bg: #1C1B1F; /* Surface color */
+  --card-border: #49454F;
+  
+  --input-bg: #1C1B1F;
+  --input-border: #938F99;
+  --modal-bg: #1C1B1F;
+
+  --border-color: #49454F;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  
+  --font-sans: 'Poppins', Arial, Helvetica, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Base styles for clearer UI */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--foreground);
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: 100px; /* Stadium shape for M3 buttons */
+  padding: 0.5rem 1.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark); 
+  opacity: 0.9;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
 }
 
 /* Cursor pointer utilities */

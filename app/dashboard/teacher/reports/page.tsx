@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import TeacherNavigation from '@/components/TeacherNavigation';
 import { useAuthStore } from '@/lib/store';
 import { attendanceApi, studentsApi, classesApi, reportsApi, paymentsApi } from '@/lib/api';
 import toast from 'react-hot-toast';
@@ -223,7 +224,7 @@ export default function ReportsPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading reports...</p>
         </div>
       </div>
@@ -232,27 +233,7 @@ export default function ReportsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.back()}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Reports</h1>
-                <p className="text-sm text-gray-600 dark:text-gray-400">View attendance reports and analytics</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <TeacherNavigation activeTab="reports" />
 
       {/* Tabs */}
       <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
@@ -270,7 +251,7 @@ export default function ReportsPage() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
                   activeTab === tab.id
-                    ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                    ? 'border-primary text-primary dark:text-primary-light'
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'
                 }`}
               >
