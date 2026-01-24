@@ -547,19 +547,39 @@ function TeacherDashboardContent() {
                     const currentYear = now.getFullYear();
                     
                     const classStudentIds = new Set(classStudents.map(s => s._id));
+
+                    console.log(`[DEBUG] Class: ${cls.name} (${cls._id})`);
+                    console.log(`[DEBUG] Total Attendance Records: ${allAttendance.length}`);
+                    console.log(`[DEBUG] Current Month: ${currentMonth}, Year: ${currentYear}`);
+                    console.log(`[DEBUG] Class Student IDs:`, Array.from(classStudentIds));
+
                     const classMonthAttendance = allAttendance.filter(record => {
+                       let isMatch = false;
                        if (record.month && record.year) {
-                         return classStudentIds.has(record.studentId) && 
-                                record.month === currentMonth && 
-                                record.year === currentYear;
+                         const matchMonth = record.month === currentMonth;
+                         const matchYear = record.year === currentYear;
+                         const matchStudent = classStudentIds.has(record.studentId);
+                         isMatch = matchStudent && matchMonth && matchYear;
+                         
+                         // Debug specific failure
+                         // if (matchStudent && (!matchMonth || !matchYear)) {
+                         //    console.log(`[DEBUG] Record ${record._id} for student ${record.studentId} skipped date mismatch. Record: ${record.month}/${record.year} vs ${currentMonth}/${currentYear}`);
+                         // }
+                       } else {
+                         // Fallback for old records
+                         const recordDate = new Date(record.date);
+                         isMatch = classStudentIds.has(record.studentId) && 
+                                (recordDate.getMonth() + 1) === currentMonth && 
+                                recordDate.getFullYear() === currentYear;
                        }
-                       // Fallback for old records
-                       const recordDate = new Date(record.date);
-                       return classStudentIds.has(record.studentId) && 
-                              (recordDate.getMonth() + 1) === currentMonth && 
-                              recordDate.getFullYear() === currentYear;
+                       return isMatch;
                     });
                     
+                    console.log(`[DEBUG] Matched Records for Class ${cls.name}: ${classMonthAttendance.length}`);
+                    if (allAttendance.length > 0 && classMonthAttendance.length === 0) {
+                        console.log('[DEBUG] First attendance record sample:', allAttendance[0]);
+                    }
+
                     const presentCount = classMonthAttendance.filter(r => r.status === 'present').length;
                     const monthlyRate = classMonthAttendance.length > 0 
                       ? Math.round((presentCount / classMonthAttendance.length) * 100) 

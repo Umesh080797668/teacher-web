@@ -67,9 +67,19 @@ function ClassDetailsContent() {
       
       // Filter attendance records for students in this class
       const classStudentIds = new Set(classStudents.map(s => s._id));
+      console.log(`[DEBUG] Class Students Count: ${classStudents.length}`);
+      console.log(`[DEBUG] Total Attendance Fetched: ${attendanceRes.data.length}`);
+      
       const classAttendance = attendanceRes.data.filter(record => 
         classStudentIds.has(record.studentId)
       );
+      console.log(`[DEBUG] Filtered Class Attendance Records: ${classAttendance.length}`);
+      if (attendanceRes.data.length > 0 && classAttendance.length === 0) {
+          console.log('[DEBUG] Mismatch Analysis - Student IDs vs Record Student IDs');
+          console.log('Class Student IDs:', Array.from(classStudentIds));
+          console.log('Sample Record Student ID:', attendanceRes.data[0].studentId);
+      }
+      
       setAttendanceRecords(classAttendance);
     } catch (error) {
       console.error('Error loading class data:', error);
