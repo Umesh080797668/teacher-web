@@ -82,12 +82,20 @@ export const paymentsApi = {
 
 // Reports API
 export const reportsApi = {
-  getAttendanceSummary: (params: { month: number; year: number; teacherId?: string }) =>
+  getAttendanceSummary: (params: { teacherId?: string; month?: number; year?: number }) =>
     api.get('/api/reports/attendance-summary', { params }),
-  getStudentReports: (params: { month: number; year: number; teacherId?: string }) =>
+  getStudentReports: (params: { teacherId?: string; month?: number; year?: number }) =>
     api.get('/api/reports/student-reports', { params }),
   getClassStudentDetails: (params: { classId: string; month: number; year: number }) =>
     api.get('/api/reports/class-student-details', { params }),
+  getMonthlyStats: (params: { teacherId?: string; year?: number }) =>
+    api.get('/api/reports/monthly-stats', { params }),
+  getDailyByClass: (params: { teacherId?: string; date?: string }) =>
+    api.get('/api/reports/daily-by-class', { params }),
+  getMonthlyByClass: (params: { teacherId?: string }) =>
+    api.get('/api/reports/monthly-by-class', { params }),
+  getMonthlyEarningsByClass: (params: { teacherId?: string; year?: number; month?: number }) =>
+    api.get('/api/reports/monthly-earnings-by-class', { params }),
 };
 
 // Web Session API

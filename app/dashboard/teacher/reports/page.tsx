@@ -1,891 +1,867 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import TeacherNavigation from '@/components/TeacherNavigation';
-import { useAuthStore } from '@/lib/store';
-import { attendanceApi, studentsApi, classesApi, reportsApi, paymentsApi } from '@/lib/api';
-import toast from 'react-hot-toast';
-import type { Attendance, Student, Class, Teacher, Payment } from '@/lib/types';
-import Pagination from '@/lib/Pagination';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { format } from "date-fns";
+import { 
+  Loader2, 
+  Users, 
+  CreditCard, 
+  Calendar as CalendarIcon, 
+  TrendingUp, 
+  AlertCircle, 
+  CheckCircle2, 
+  XCircle, 
+  Clock, 
+  Filter, 
+  Download,
+  School,
+  Wallet,
+  Receipt
+} from 'lucide-react';
+import { reportsApi, paymentsApi, classesApi } from '@/lib/api';
+import type { Payment as APIPayment } from '@/lib/types';
+import { useToast } from "@/components/ui/use-toast";
 
-interface StudentReport {
-  studentId: string;
-  studentName: string;
+// Types matching API responses
+interface AttendanceSummary {
   presentCount: number;
   absentCount: number;
   lateCount: number;
+  leaveCount: number;
+  totalStudents: number;
   attendanceRate: number;
 }
 
-interface ClassReport {
-  classId: string;
-  className: string;
-  totalStudents: number;
-  presentCount: number;
-  absentCount: number;
-  lateCount: number;
-  attendanceRate: number;
-}
-
-interface ClassStudentDetails {
-  className: string;
-  totalStudents: number;
+interface MonthlyStat {
   month: number;
   year: number;
-  studentsDetails: Array<{
-    studentId: string;
-    studentName: string;
-    studentIdNumber: string;
-    presentCount: number;
-    absentCount: number;
-    lateCount: number;
-    totalClasses: number;
-    attendanceRate: number;
-  }>;
+  presentCount: number;
+  absentCount: number;
+  lateCount: number;
+  attendanceRate: number;
+}
+
+interface DailyClassStat {
+  classId: string;
+  className: string;
+  presentCount: number;
+  absentCount: number;
+  lateCount: number;
+  attendanceRate: number;
+  totalStudents: number;
+}
+
+interface StudentReportItem {
+  studentId: string;
+  studentName: string;
+  rollNumber: string;
+  className: string;
+  presentCount: number;
+  absentCount: number;
+  lateCount: number;
+  leaveCount: number;
+  totalClasses: number;
+  attendanceRate: number;
+  status: string;
+}
+
+interface Payment {
+  _id: string;
+  studentId: string;
+  studentName: string;
+  classId: string;
+  className: string;
+  amount: number;
+  type: string;
+  month: string;
+  date: string;
+  status: string;
+  paymentMethod: string;
+}
+
+interface MonthlyEarningsStat {
+  classId: string;
+  className: string;
+  monthlyBreakdown: {
+    month: number;
+    year: number;
+    amount: number;
+    paymentCount: number;
+  }[];
+}
+
+interface ClassItem {
+  _id: string;
+  name: string;
+}
+
+interface GroupedStudentPayment {
+  studentId: string;
+  studentName: string;
+  className: string;
+  payments: Payment[];
+  totalAmount: number;
 }
 
 export default function ReportsPage() {
   const router = useRouter();
-  const { user, userType, isAuthenticated } = useAuthStore();
-  const [attendance, setAttendance] = useState<Attendance[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'summary' | 'students' | 'payments' | 'earnings'>('summary');
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [selectedClassFilter, setSelectedClassFilter] = useState<string>('all');
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [selectedClass, setSelectedClass] = useState<string>("all");
+  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().getMonth() + 1 + "");
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear() + "");
+  const [classes, setClasses] = useState<ClassItem[]>([]);
 
-  // Modal states
-  const [showClassDetailsModal, setShowClassDetailsModal] = useState(false);
-  const [selectedClassForModal, setSelectedClassForModal] = useState<ClassReport | null>(null);
-  const [isLoadingClassDetails, setIsLoadingClassDetails] = useState(false);
-  const [classDetailsData, setClassDetailsData] = useState<ClassStudentDetails | null>(null);
+  // Data states
+  const [summary, setSummary] = useState<AttendanceSummary | null>(null);
+  const [monthlyStats, setMonthlyStats] = useState<MonthlyStat[]>([]);
+  const [dailyClassStats, setDailyClassStats] = useState<DailyClassStat[]>([]);
+  const [studentReports, setStudentReports] = useState<StudentReportItem[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]); // Raw payments list
+  const [monthlyEarnings, setMonthlyEarnings] = useState<MonthlyEarningsStat[]>([]);
 
-  // Pagination states
-  const [studentsReportsCurrentPage, setStudentsReportsCurrentPage] = useState(1);
-  const STUDENTS_REPORTS_PER_PAGE = 10;
-
-  const [expandedEarnings, setExpandedEarnings] = useState<Set<number>>(new Set());
-
-  const teacher = user as Teacher;
-  const teacherId = teacher?.teacherId;
-
+  // Fetch all data
   useEffect(() => {
-    if (!isAuthenticated || userType !== 'teacher') {
-      router.push('/login');
-      return;
-    }
     loadData();
-    setStudentsReportsCurrentPage(1); // Reset to first page when filters change
-  }, [isAuthenticated, userType, router, selectedMonth, selectedYear]);
+  }, []);
 
   const loadData = async () => {
-    if (!teacherId) return;
-    
-    setIsLoading(true);
     try {
-      const [attendanceRes, studentsRes, classesRes, paymentsRes] = await Promise.all([
-        attendanceApi.getAll({ month: selectedMonth, year: selectedYear, teacherId }),
-        studentsApi.getAll(teacherId),
-        classesApi.getAll(teacherId),
-        paymentsApi.getAll({ teacherId }).catch(() => ({ data: [] })),
+      setLoading(true);
+      // Get teacher ID from local storage or context if available, otherwise API handles auth
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const teacherId = user?.id;
+
+      // Fetch helper data
+      const classesRes = await classesApi.getAll();
+      const classesData = classesRes.data || [];
+      setClasses(classesData);
+
+      // Parallel fetch for report tabs
+      const [
+        summaryRes,
+        monthlyRes,
+        dailyClassRes,
+        studentsRes,
+        paymentsRes, // Fetch raw payments for filtering
+        earningsRes
+      ] = await Promise.all([
+        reportsApi.getAttendanceSummary({ teacherId }),
+        reportsApi.getMonthlyStats({ teacherId, year: parseInt(selectedYear) }),
+        reportsApi.getDailyByClass({ teacherId }), // Defaults to today
+        reportsApi.getStudentReports({ teacherId }),
+        paymentsApi.getAll({ teacherId }), 
+        reportsApi.getMonthlyEarningsByClass({ teacherId })
       ]);
 
-      setAttendance(attendanceRes.data);
-      setStudents(studentsRes.data);
-      setClasses(classesRes.data);
-      setPayments(paymentsRes.data || []);
+      setSummary(summaryRes.data);
+      setMonthlyStats(monthlyRes.data || []);
+      setDailyClassStats(dailyClassRes.data || []);
+      const studentsData = (studentsRes.data || []) as StudentReportItem[];
+      setStudentReports(studentsData);
+      
+      // Map API payments to UI model
+      const classMap = new Map(classesData.map(c => [c._id, c.name]));
+      const studentMap = new Map(studentsData.map(s => [s.studentId, s.studentName]));
+      
+      const mappedPayments = (paymentsRes.data || []).map((p: APIPayment) => ({
+        _id: p._id,
+        studentId: p.studentId,
+        studentName: studentMap.get(p.studentId) || 'Unknown Student',
+        classId: p.classId,
+        className: classMap.get(p.classId) || 'Unknown Class',
+        amount: p.amount,
+        type: p.type,
+        month: p.month?.toString() || '', 
+        date: p.date,
+        status: 'Completed',
+        paymentMethod: 'Cash'
+      }));
+
+      setPayments(mappedPayments);
+      setMonthlyEarnings(earningsRes.data || []);
+
     } catch (error) {
-      console.error('Error loading data:', error);
-      toast.error('Failed to load reports');
+      console.error("Failed to load reports data", error);
+      toast({
+        title: "Error",
+        description: "Failed to load reports data. Please try again.",
+        variant: "destructive",
+      });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  // Calculate overall summary
-  const todayDate = new Date().toDateString();
-  const todayAttendance = attendance.filter(a => new Date(a.date).toDateString() === todayDate);
-  
-  const summary = {
-    totalStudents: students.length,
-    presentToday: todayAttendance.filter(a => a.status === 'present').length,
-    absentToday: todayAttendance.filter(a => a.status === 'absent').length,
-    lateToday: todayAttendance.filter(a => a.status === 'late').length,
-  };
-
-  // Calculate daily attendance by class
-  const dailyByClass: ClassReport[] = classes.map(cls => {
-    const classStudents = students.filter(s => s.classId === cls._id);
-    const classAttendance = todayAttendance.filter(a => 
-      classStudents.some(s => s._id === a.studentId || s._id?.toString() === a.studentId?.toString())
-    );
-    
-    const presentCount = classAttendance.filter(a => a.status === 'present').length;
-    const absentCount = classAttendance.filter(a => a.status === 'absent').length;
-    const lateCount = classAttendance.filter(a => a.status === 'late').length;
-    const total = presentCount + absentCount + lateCount;
-    const attendanceRate = total > 0 ? (presentCount / total) * 100 : 0;
-
-    return {
-      classId: cls._id,
-      className: cls.name,
-      totalStudents: classStudents.length,
-      presentCount,
-      absentCount,
-      lateCount,
-      attendanceRate,
-    };
-  });
-
-  // Calculate monthly statistics by class
-  const monthlyByClass: ClassReport[] = classes.map(cls => {
-    const classStudents = students.filter(s => s.classId === cls._id);
-    const classAttendance = attendance.filter(a =>
-      classStudents.some(s => s._id === a.studentId || s._id?.toString() === a.studentId?.toString())
-    );
-
-    const presentCount = classAttendance.filter(a => a.status === 'present').length;
-    const absentCount = classAttendance.filter(a => a.status === 'absent').length;
-    const lateCount = classAttendance.filter(a => a.status === 'late').length;
-    const total = presentCount + absentCount + lateCount;
-    const attendanceRate = total > 0 ? (presentCount / total) * 100 : 0;
-
-    return {
-      classId: cls._id,
-      className: cls.name,
-      totalStudents: classStudents.length,
-      presentCount,
-      absentCount,
-      lateCount,
-      attendanceRate,
-    };
-  });
-
-  // Calculate student reports
-  const allStudentReports: StudentReport[] = students.map(student => {
-    const studentAttendance = attendance.filter(a => 
-      a.studentId === student._id || a.studentId?.toString() === student._id?.toString()
-    );
-    const presentCount = studentAttendance.filter(a => a.status === 'present').length;
-    const absentCount = studentAttendance.filter(a => a.status === 'absent').length;
-    const lateCount = studentAttendance.filter(a => a.status === 'late').length;
-    const total = studentAttendance.length;
-    const attendanceRate = total > 0 ? (presentCount / total) * 100 : 0;
-
-    return {
-      studentId: student._id,
-      studentName: student.name,
-      presentCount,
-      absentCount,
-      lateCount,
-      attendanceRate,
-    };
-  }).sort((a, b) => b.attendanceRate - a.attendanceRate);
-
-  // Filter student reports by class
-  const studentReports = selectedClassFilter === 'all' 
-    ? allStudentReports 
-    : allStudentReports.filter(report => {
-        const student = students.find(s => s._id === report.studentId);
-        return student?.classId === selectedClassFilter;
-      });
-
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  // Handle class card click to show details modal
-  const handleClassClick = async (classReport: ClassReport) => {
-    setSelectedClassForModal(classReport);
-    setShowClassDetailsModal(true);
-    setIsLoadingClassDetails(true);
-    setClassDetailsData(null);
-
-    try {
-      const response = await reportsApi.getClassStudentDetails({
-        classId: classReport.classId,
-        month: selectedMonth,
-        year: selectedYear,
-      });
-      setClassDetailsData(response.data);
-    } catch (error) {
-      console.error('Error loading class details:', error);
-      toast.error('Failed to load class details');
-    } finally {
-      setIsLoadingClassDetails(false);
-    }
-  };
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading reports...</p>
-        </div>
+      <div className="flex items-center justify-center h-full p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading reports...</span>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <TeacherNavigation activeTab="reports" />
-
-      {/* Tabs */}
-      <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8" aria-label="Tabs">
-            {[
-              { id: 'summary', name: 'Attendance Summary', icon: '📊' },
-              { id: 'students', name: 'Student Reports', icon: '👨‍🎓' },
-              { id: 'payments', name: 'Payments', icon: '💳' },
-              { id: 'earnings', name: 'Earnings', icon: '💰' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
-                  activeTab === tab.id
-                    ? 'border-primary text-primary dark:text-primary-light'
-                    : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.name}
-              </button>
-            ))}
-          </nav>
-        </div>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Reports & Analytics</h2>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Attendance Summary Tab */}
-        {activeTab === 'summary' && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Overall Attendance Summary</h2>
+      <Tabs defaultValue="summary" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="summary">Attendance Summary</TabsTrigger>
+          <TabsTrigger value="students">Student Reports</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="earnings">Earnings</TabsTrigger>
+        </TabsList>
 
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Students</p>
-                    <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mt-2">{summary.totalStudents}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+        <TabsContent value="summary" className="space-y-4">
+          <AttendanceSummaryTab 
+            summary={summary}
+            monthlyStats={monthlyStats}
+            dailyClassStats={dailyClassStats}
+            classes={classes}
+          />
+        </TabsContent>
 
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Present Today</p>
-                    <p className="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{summary.presentToday}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-green-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+        <TabsContent value="students" className="space-y-4">
+           <StudentReportsTab 
+             reports={studentReports}
+             classes={classes}
+           />
+        </TabsContent>
 
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Absent Today</p>
-                    <p className="text-3xl font-bold text-red-600 dark:text-red-400 mt-2">{summary.absentToday}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-red-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
+        <TabsContent value="payments" className="space-y-4">
+          <PaymentsTab 
+            payments={payments}
+            classes={classes}
+          />
+        </TabsContent>
 
-              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Late Today</p>
-                    <p className="text-3xl font-bold text-orange-600 dark:text-orange-400 mt-2">{summary.lateToday}</p>
-                  </div>
-                  <div className="w-12 h-12 bg-orange-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <TabsContent value="earnings" className="space-y-4">
+          <EarningsTab 
+            monthlyEarnings={monthlyEarnings}
+            payments={payments} // Pass raw payments for daily view
+            classes={classes}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
 
-            {/* Daily Attendance by Class */}
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Daily Attendance by Class</h3>
-              <div className="space-y-4">
-                {dailyByClass.map((classData) => (
-                  <div key={classData.classId} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{classData.className}</h4>
-                      <span className="px-3 py-1 bg-indigo-100 dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 rounded-full text-sm font-medium">
-                        {classData.totalStudents} Students
-                      </span>
-                    </div>
+// --- Tab Components ---
 
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">{classData.presentCount}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Present</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">{classData.absentCount}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Absent</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{classData.lateCount}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Late</p>
-                      </div>
-                    </div>
+function AttendanceSummaryTab({ 
+  summary, 
+  monthlyStats, 
+  dailyClassStats,
+  classes 
+}: { 
+  summary: AttendanceSummary | null, 
+  monthlyStats: MonthlyStat[], 
+  dailyClassStats: DailyClassStat[],
+  classes: ClassItem[]
+}) {
+  if (!summary) return <div>No summary data available</div>;
 
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600 dark:text-gray-400">Attendance Rate</span>
-                        <span className={`font-semibold ${
-                          classData.attendanceRate >= 75 ? 'text-green-600 dark:text-green-400' : 'text-orange-600 dark:text-orange-400'
-                        }`}>
-                          {classData.attendanceRate.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-slate-600 rounded-full h-2">
-                        <div
-                          className={`h-2 rounded-full transition-all duration-500 ${
-                            classData.attendanceRate >= 75 ? 'bg-green-500' : 'bg-orange-500'
-                          }`}
-                          style={{ width: `${classData.attendanceRate}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+  const chartData = monthlyStats.map(stat => ({
+    name: new Date(0, stat.month - 1).toLocaleString('default', { month: 'short' }),
+    Present: stat.presentCount,
+    Absent: stat.absentCount,
+    Late: stat.lateCount
+  }));
 
-        {/* Student Reports Tab */}
-        {activeTab === 'students' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Student Reports</h2>
-              <div className="flex items-center space-x-4">
-                <select
-                  value={selectedClassFilter}
-                  onChange={(e) => {
-                    setSelectedClassFilter(e.target.value);
-                    setStudentsReportsCurrentPage(1);
-                  }}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                >
-                  <option value="all">All Classes</option>
-                  {classes.map((cls) => (
-                    <option key={cls._id} value={cls._id}>{cls.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                >
-                  {monthNames.map((month, index) => (
-                    <option key={index + 1} value={index + 1}>{month}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                >
-                  {Array.from({ length: 10 }, (_, i) => 2020 + i).map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+  return (
+    <>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Present</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summary.presentCount}</div>
+            <p className="text-xs text-muted-foreground">
+              {summary.attendanceRate.toFixed(1)}% Attendance Rate
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Absent</CardTitle>
+            <XCircle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summary.absentCount}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Late Arrivals</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summary.lateCount}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">On Leave</CardTitle>
+            <AlertCircle className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{summary.leaveCount}</div>
+          </CardContent>
+        </Card>
+      </div>
 
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Monthly Attendance Trend</CardTitle>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ResponsiveContainer width="100%" height={350}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip />
+                <Bar dataKey="Present" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Absent" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Late" fill="#eab308" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Today's Overview by Class</CardTitle>
+            <CardDescription>
+              Attendance breakdown for {format(new Date(), 'MMM dd, yyyy')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-4">
-              {studentReports
-                .slice((studentsReportsCurrentPage - 1) * STUDENTS_REPORTS_PER_PAGE, studentsReportsCurrentPage * STUDENTS_REPORTS_PER_PAGE)
-                .map((report) => {
-                  const student = students.find(s => s._id === report.studentId);
-                  const studentClass = classes.find(c => c._id === student?.classId);
-                  
-                  return (
-                <div key={report.studentId} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{report.studentName}</h4>
-                      {studentClass && (
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{studentClass.name}</p>
-                      )}
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      report.attendanceRate >= 75 
-                        ? 'bg-green-100 dark:bg-slate-700 text-green-600 dark:text-green-400'
-                        : 'bg-red-100 dark:bg-slate-700 text-red-600 dark:text-red-400'
-                    }`}>
-                      {report.attendanceRate.toFixed(1)}%
-                    </span>
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      <span className="px-3 py-1 bg-green-100 dark:bg-slate-700 text-green-600 dark:text-green-400 rounded-lg text-sm font-medium">
-                        Present: {report.presentCount}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="px-3 py-1 bg-red-100 dark:bg-slate-700 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium">
-                        Absent: {report.absentCount}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="px-3 py-1 bg-orange-100 dark:bg-slate-700 text-orange-600 dark:text-orange-400 rounded-lg text-sm font-medium">
-                        Late: {report.lateCount}
-                      </span>
-                    </div>
-                  </div>
+              {dailyClassStats.length === 0 ? (
+                 <p className="text-sm text-muted-foreground text-center py-4">No data for today</p>
+              ) : dailyClassStats.map((stat) => (
+                <div key={stat.classId} className="space-y-2">
+                   <div className="flex items-center justify-between">
+                     <span className="font-medium">{stat.className}</span>
+                     <span className="text-sm text-muted-foreground">{stat.attendanceRate.toFixed(0)}%</span>
+                   </div>
+                   <div className="h-2 w-full bg-secondary rounded-full overflow-hidden flex">
+                      <div className="h-full bg-green-500" style={{ width: `${(stat.presentCount / stat.totalStudents) * 100}%` }} />
+                      <div className="h-full bg-red-500" style={{ width: `${(stat.absentCount / stat.totalStudents) * 100}%` }} />
+                      <div className="h-full bg-yellow-500" style={{ width: `${(stat.lateCount / stat.totalStudents) * 100}%` }} />
+                   </div>
+                   <div className="flex justify-between text-xs text-muted-foreground">
+                      <span className="flex items-center"><div className="w-2 h-2 rounded-full bg-green-500 mr-1"/> {stat.presentCount}</span>
+                      <span className="flex items-center"><div className="w-2 h-2 rounded-full bg-red-500 mr-1"/> {stat.absentCount}</span>
+                      <span className="flex items-center"><div className="w-2 h-2 rounded-full bg-yellow-500 mr-1"/> {stat.lateCount}</span>
+                   </div>
                 </div>
-              );
-            })}
+              ))}
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  );
+}
 
-            {studentReports.length > STUDENTS_REPORTS_PER_PAGE && (
-              <Pagination
-                currentPage={studentsReportsCurrentPage}
-                totalItems={studentReports.length}
-                itemsPerPage={STUDENTS_REPORTS_PER_PAGE}
-                onPageChange={setStudentsReportsCurrentPage}
-              />
-            )}
-          </div>
-        )}
+function StudentReportsTab({ reports, classes }: { reports: StudentReportItem[], classes: ClassItem[] }) {
+  const [filterClass, setFilterClass] = useState("all");
 
-        {/* Earnings Tab */}
-        {activeTab === 'earnings' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Monthly Earnings</h2>
-              <div className="flex items-center space-x-4">
-                <select
-                  value={selectedClassFilter}
-                  onChange={(e) => setSelectedClassFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                >
-                  <option value="all">All Classes</option>
-                  {classes.map((cls) => (
-                    <option key={cls._id} value={cls._id}>{cls.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                >
-                  {monthNames.map((month, index) => (
-                    <option key={index + 1} value={index + 1}>{month}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                >
-                  {Array.from({ length: 10 }, (_, i) => 2020 + i).map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
+  const filteredReports = useMemo(() => {
+    return reports.filter(r => filterClass === "all" || r.className === classes.find(c => c._id === filterClass)?.name || r.className === filterClass); // loose matching if ids don't align perfectly
+  }, [reports, filterClass, classes]);
 
-            {/* Total Earnings Summary */}
-            {(() => {
-              const filteredPayments = payments.filter(payment => {
-                const paymentDate = new Date(payment.date);
-                const matchesMonth = paymentDate.getMonth() + 1 === selectedMonth;
-                const matchesYear = paymentDate.getFullYear() === selectedYear;
-                const matchesClass = selectedClassFilter === 'all' || payment.classId === selectedClassFilter;
-                return matchesMonth && matchesYear && matchesClass;
-              });
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Student Performance Reports</CardTitle>
+        <div className="w-[200px]">
+          <Select value={filterClass} onValueChange={setFilterClass}>
+            <SelectTrigger>
+              <SelectValue placeholder="Filter by Class" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes</SelectItem>
+              {classes.map(cls => (
+                <SelectItem key={cls._id} value={cls._id}>{cls.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Student</TableHead>
+              <TableHead>Class</TableHead>
+              <TableHead className="text-center">Present</TableHead>
+              <TableHead className="text-center">Absent</TableHead>
+              <TableHead className="text-center">Late</TableHead>
+              <TableHead className="text-right">Rate</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+             {filteredReports.map((student) => (
+               <TableRow key={student.studentId}>
+                 <TableCell className="font-medium">
+                   <div>{student.studentName}</div>
+                   <div className="text-xs text-muted-foreground">{student.rollNumber}</div>
+                 </TableCell>
+                 <TableCell>{student.className}</TableCell>
+                 <TableCell className="text-center">
+                    <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">{student.presentCount}</Badge>
+                 </TableCell>
+                 <TableCell className="text-center">
+                    <Badge variant="outline" className="text-red-600 bg-red-50 border-red-200">{student.absentCount}</Badge>
+                 </TableCell>
+                 <TableCell className="text-center">
+                    <Badge variant="outline" className="text-yellow-600 bg-yellow-50 border-yellow-200">{student.lateCount}</Badge>
+                 </TableCell>
+                 <TableCell className="text-right">
+                   <span className={
+                     student.attendanceRate >= 75 ? "text-green-600 font-bold" : 
+                     student.attendanceRate >= 60 ? "text-yellow-600 font-bold" : "text-red-600 font-bold"
+                   }>
+                     {student.attendanceRate.toFixed(1)}%
+                   </span>
+                 </TableCell>
+               </TableRow>
+             ))}
+             {filteredReports.length === 0 && (
+               <TableRow>
+                 <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
+                   No student reports found.
+                 </TableCell>
+               </TableRow>
+             )}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
 
-              const totalEarnings = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
-              const totalPayments = filteredPayments.length;
+function PaymentsTab({ payments, classes }: { payments: Payment[], classes: ClassItem[] }) {
+  const [filterClass, setFilterClass] = useState("all");
+  const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
 
-              return (
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm opacity-90">Total Earnings</p>
-                      <h3 className="text-3xl font-bold mt-1">LKR {totalEarnings.toFixed(2)}</h3>
-                      <p className="text-sm opacity-75 mt-1">{totalPayments} payment{totalPayments !== 1 ? 's' : ''}</p>
-                    </div>
-                    <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                      <span className="text-3xl">💰</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+  // Group payments by student like the mobile app
+  const groupedPayments = useMemo(() => {
+    // 1. Filter raw payments
+    const filtered = payments.filter(p => {
+       const classMatch = filterClass === "all" || p.classId === filterClass;
+       // Assuming p.date is ISO or parseable, or p.month matches filter
+       // Mobile filters by Date Month/Year components. 
+       // `p.month` in API response might be "January" string or number? 
+       // Based on schemas usually seen, let's parse date.
+       // The API mock/structure suggests `date` is ISO.
+       let dateMatch = true;
+       if (p.date) {
+         const d = new Date(p.date);
+         dateMatch = d.getMonth() + 1 === parseInt(filterMonth) && d.getFullYear() === parseInt(filterYear);
+       }
+       return classMatch && dateMatch;
+    });
 
-            {/* Earnings by Class */}
-            <div className="space-y-4">
-              {(() => {
-                // Group payments by class
-                const classEarningsMap = new Map();
+    // 2. Group by Student
+    const groups: { [key: string]: GroupedStudentPayment } = {};
+    
+    filtered.forEach(p => {
+      if (!groups[p.studentId]) {
+        groups[p.studentId] = {
+          studentId: p.studentId,
+          studentName: p.studentName,
+          className: p.className,
+          payments: [],
+          totalAmount: 0
+        };
+      }
+      groups[p.studentId].payments.push(p);
+      groups[p.studentId].totalAmount += p.amount;
+    });
 
-                payments
-                  .filter(payment => {
-                    const paymentDate = new Date(payment.date);
-                    const matchesMonth = paymentDate.getMonth() + 1 === selectedMonth;
-                    const matchesYear = paymentDate.getFullYear() === selectedYear;
-                    const matchesClass = selectedClassFilter === 'all' || payment.classId === selectedClassFilter;
-                    return matchesMonth && matchesYear && matchesClass;
-                  })
-                  .forEach(payment => {
-                    const classId = payment.classId;
-                    if (!classEarningsMap.has(classId)) {
-                      const cls = classes.find(c => c._id === classId);
-                      classEarningsMap.set(classId, {
-                        className: cls?.name || 'Unknown Class',
-                        payments: [],
-                        totalAmount: 0,
-                        paymentCount: 0,
-                      });
-                    }
-                    const classData = classEarningsMap.get(classId);
-                    classData.payments.push(payment);
-                    classData.totalAmount += payment.amount;
-                    classData.paymentCount += 1;
-                  });
+    return Object.values(groups);
+  }, [payments, filterClass, filterMonth, filterYear]);
 
-                const classEarnings = Array.from(classEarningsMap.values());
 
-                if (classEarnings.length === 0) {
-                  return (
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-12 text-center">
-                      <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-3xl">💰</span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No earnings found</h3>
-                      <p className="text-gray-600 dark:text-gray-400">
-                        No payment records found for {monthNames[selectedMonth - 1]} {selectedYear}
-                      </p>
-                    </div>
-                  );
-                }
-
-                return classEarnings.map((classData, index) => {
-                  const isExpanded = expandedEarnings.has(index);
-                  return (
-                    <div key={index} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
-                      <div
-                        className="p-6 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-                        onClick={() => {
-                          const newExpanded = new Set(expandedEarnings);
-                          if (isExpanded) {
-                            newExpanded.delete(index);
-                          } else {
-                            newExpanded.add(index);
-                          }
-                          setExpandedEarnings(newExpanded);
-                        }}
-                      >
-                        <div className="flex items-center justify-between w-full">
-                          <div className="flex items-center space-x-4">
-                            <svg
-                              className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'transform rotate-90' : ''}`}
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                            <div>
-                              <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{classData.className}</h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">{classData.paymentCount} payment{classData.paymentCount !== 1 ? 's' : ''}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xl font-bold text-green-600 dark:text-green-400">LKR {classData.totalAmount.toFixed(2)}</p>
-                          </div>
-                        </div>
-                      </div>
-                      {isExpanded && (
-                        <div className="px-6 pb-6 border-t border-gray-200 dark:border-slate-600">
-                          <div className="space-y-3 pt-4">
-                            {classData.payments.map((payment: Payment, paymentIndex: number) => {
-                              const student = students.find(s => s._id === payment.studentId);
-                              return (
-                                <div key={payment._id || paymentIndex} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                                  <div className="flex items-center space-x-3">
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                                      payment.type === 'full' ? 'bg-blue-100 dark:bg-blue-900/30' :
-                                      payment.type === 'half' ? 'bg-orange-100 dark:bg-orange-900/30' :
-                                      'bg-purple-100 dark:bg-purple-900/30'
-                                    }`}>
-                                      <span className="text-sm">💰</span>
-                                    </div>
-                                    <div>
-                                      <p className="font-medium text-gray-900 dark:text-white">
-                                        {student?.name || 'Unknown Student'}
-                                      </p>
-                                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                                        {new Date(payment.date).toLocaleDateString()} • {payment.type}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="font-semibold text-green-600 dark:text-green-400">
-                                      LKR {payment.amount.toFixed(2)}
-                                    </p>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-        )}
-
-        {/* Payments Tab */}
-        {activeTab === 'payments' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Payments</h2>
-              <div className="flex items-center space-x-4">
-                <select
-                  value={selectedClassFilter}
-                  onChange={(e) => setSelectedClassFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                >
-                  <option value="all">All Classes</option>
-                  {classes.map((cls) => (
-                    <option key={cls._id} value={cls._id}>{cls.name}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                >
-                  {monthNames.map((month, index) => (
-                    <option key={index + 1} value={index + 1}>{month}</option>
-                  ))}
-                </select>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                >
-                  {Array.from({ length: 10 }, (_, i) => 2020 + i).map((year) => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-              {payments.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-indigo-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-3xl">💳</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Payment Records</h3>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    No payment records found for {monthNames[selectedMonth - 1]} {selectedYear}
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {payments
-                    .filter(payment => {
-                      const paymentDate = new Date(payment.date);
-                      const matchesMonth = paymentDate.getMonth() + 1 === selectedMonth;
-                      const matchesYear = paymentDate.getFullYear() === selectedYear;
-                      const matchesClass = selectedClassFilter === 'all' || payment.classId === selectedClassFilter;
-                      return matchesMonth && matchesYear && matchesClass;
-                    })
-                    .map(payment => {
-                      const student = students.find(s => s._id === payment.studentId);
-                      const cls = classes.find(c => c._id === payment.classId);
-                      
-                      return (
-                        <div key={payment._id} className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4 border border-gray-200 dark:border-slate-600">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <div className="text-2xl">💰</div>
-                              <div>
-                                <h4 className="font-medium text-gray-900 dark:text-white">
-                                  {student?.name || 'Unknown Student'}
-                                </h4>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">
-                                  {cls?.name || 'Unknown Class'} • {new Date(payment.date).toLocaleDateString()}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            <div className="text-right">
-                              <div className="text-lg font-bold text-green-600 dark:text-green-400">
-                                LKR {payment.amount.toFixed(2)}
-                              </div>
-                              <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                                payment.type === 'full' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
-                                payment.type === 'half' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300' :
-                                'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
-                              }`}>
-                                {payment.type}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
+  return (
+    <div className="space-y-4">
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid gap-4 md:grid-cols-3">
+             <div className="space-y-2">
+                <label className="text-sm font-medium">Class</label>
+                <Select value={filterClass} onValueChange={setFilterClass}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Classes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Classes</SelectItem>
+                    {classes.map(c => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+             </div>
+             <div className="space-y-2">
+                <label className="text-sm font-medium">Month</label>
+                <Select value={filterMonth} onValueChange={setFilterMonth}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                      <SelectItem key={m} value={m.toString()}>{new Date(0, m-1).toLocaleString('default', { month: 'long' })}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+             </div>
+             <div className="space-y-2">
+                <label className="text-sm font-medium">Year</label>
+                <Select value={filterYear} onValueChange={setFilterYear}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[0,1,2,3,4].map(i => {
+                      const y = new Date().getFullYear() - i;
+                      return <SelectItem key={y} value={y.toString()}>{y}</SelectItem>;
                     })}
-                </div>
-              )}
-            </div>
+                  </SelectContent>
+                </Select>
+             </div>
           </div>
-        )}
-      </main>
+        </CardContent>
+      </Card>
 
-      {/* Class Student Details Modal */}
-      {showClassDetailsModal && selectedClassForModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
-              <div className="flex items-center justify-between text-white">
-                <div>
-                  <h3 className="text-xl font-bold">{selectedClassForModal.className}</h3>
-                  <p className="text-sm opacity-90">Student Attendance Details - {monthNames[selectedMonth - 1]} {selectedYear}</p>
-                </div>
-                <button
-                  onClick={() => setShowClassDetailsModal(false)}
-                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-              {isLoadingClassDetails ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
-                </div>
-              ) : classDetailsData ? (
-                <div className="space-y-6">
-                  {/* Summary */}
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-700 dark:to-slate-600 rounded-xl p-6">
-                    <div className="grid grid-cols-2 gap-6">
-                      <div className="text-center">
-                        <p className="text-4xl font-bold text-indigo-600 dark:text-indigo-400">{classDetailsData.totalStudents}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">Total Students</p>
+      {/* Grouped Payments List */}
+      {groupedPayments.length === 0 ? (
+         <div className="flex flex-col items-center justify-center p-8 text-center border rounded-lg bg-background text-muted-foreground">
+            <CreditCard className="h-12 w-12 mb-4 opacity-20" />
+            <p>No payments found for selected criteria.</p>
+         </div>
+      ) : (
+        <Card className="px-2"> {/* Container for accordion */}
+          <Accordion type="multiple" className="w-full">
+            {groupedPayments.map((group) => (
+              <AccordionItem key={group.studentId} value={group.studentId}>
+                <AccordionTrigger className="hover:no-underline">
+                   <div className="flex flex-1 items-center justify-between pr-4">
+                      <div className="text-left">
+                         <div className="font-semibold">{group.studentName}</div>
+                         <div className="text-xs text-muted-foreground">{group.className}</div>
                       </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-gray-900 dark:text-white">{monthNames[classDetailsData.month - 1]} {classDetailsData.year}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">Period</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Students List */}
-                  {classDetailsData.studentsDetails.length === 0 ? (
-                    <div className="text-center py-12">
-                      <div className="w-16 h-16 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-3xl">👥</span>
-                      </div>
-                      <p className="text-gray-600 dark:text-gray-400">No students found in this class</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {classDetailsData.studentsDetails.map((student) => (
-                        <div key={student.studentId} className="bg-gray-50 dark:bg-slate-700 rounded-xl p-5 hover:shadow-md transition-shadow">
-                          <div className="flex items-start justify-between mb-4">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-full flex items-center justify-center">
-                                <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">
-                                  {student.studentName.charAt(0).toUpperCase()}
+                      <Badge variant="outline" className="text-green-600 bg-green-50 border-green-200">
+                         Rs. {group.totalAmount.toFixed(2)}
+                      </Badge>
+                   </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                   <div className="space-y-2 pl-4 border-l-2 border-muted ml-2">
+                      {group.payments.map((p, idx) => (
+                        <div key={p._id || idx} className="flex items-center justify-between text-sm py-2 border-b last:border-0 border-dashed">
+                           <div className="flex items-center gap-3">
+                              {p.type.toLowerCase() === 'full' ? <CheckCircle2 className="w-4 h-4 text-green-500"/> : 
+                               p.type.toLowerCase() === 'half' ? <AlertCircle className="w-4 h-4 text-orange-500"/> :
+                               <Badge variant="secondary" className="text-[10px] h-4">{p.type}</Badge>
+                              }
+                              <div className="flex flex-col">
+                                <span className="font-medium capitalize">{p.type} Payment</span>
+                                <span className="text-xs text-muted-foreground">
+                                  {p.date ? format(new Date(p.date), 'dd/MM/yyyy') : 'No date'}
                                 </span>
                               </div>
-                              <div>
-                                <h4 className="font-semibold text-gray-900 dark:text-white">{student.studentName}</h4>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">ID: {student.studentIdNumber}</p>
-                              </div>
-                            </div>
-                            <div className={`px-4 py-2 rounded-full font-bold ${
-                              student.attendanceRate >= 75
-                                ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                                : student.attendanceRate >= 50
-                                ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
-                                : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                            }`}>
-                              {student.attendanceRate.toFixed(1)}%
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-3 gap-3 mb-3">
-                            <div className="bg-green-100 dark:bg-green-900/20 rounded-lg p-3 text-center">
-                              <p className="text-2xl font-bold text-green-600 dark:text-green-400">{student.presentCount}</p>
-                              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Present</p>
-                            </div>
-                            <div className="bg-red-100 dark:bg-red-900/20 rounded-lg p-3 text-center">
-                              <p className="text-2xl font-bold text-red-600 dark:text-red-400">{student.absentCount}</p>
-                              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Absent</p>
-                            </div>
-                            <div className="bg-orange-100 dark:bg-orange-900/20 rounded-lg p-3 text-center">
-                              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{student.lateCount}</p>
-                              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">Late</p>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-center text-sm text-gray-600 dark:text-gray-400">
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            Total classes: {student.totalClasses}
-                          </div>
+                           </div>
+                           <span className="font-bold">Rs. {p.amount.toFixed(2)}</span>
                         </div>
                       ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <p className="text-gray-600 dark:text-gray-400">No data available</p>
-                </div>
-              )}
-            </div>
-          </div>
+                   </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function EarningsTab({ 
+  monthlyEarnings, 
+  payments, 
+  classes 
+}: { 
+  monthlyEarnings: MonthlyEarningsStat[], 
+  payments: Payment[], 
+  classes: ClassItem[] 
+}) {
+  const [viewMode, setViewMode] = useState<'monthly' | 'daily'>('monthly');
+  
+  // -- Monthly View State --
+  const [filterMonth, setFilterMonth] = useState((new Date().getMonth() + 1).toString());
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+
+  // -- Daily View State --
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+
+  // --- Monthly Calculation ---
+  const monthlyData = useMemo(() => {
+    // Flatten earnings
+    const flattened: any[] = [];
+    monthlyEarnings.forEach(cls => {
+      cls.monthlyBreakdown.forEach(m => {
+        flattened.push({
+          classId: cls.classId,
+          className: cls.className,
+          month: m.month,
+          year: m.year,
+          amount: m.amount,
+          paymentCount: m.paymentCount
+        });
+      });
+    });
+
+    // Filter
+    const filtered = flattened.filter(item => 
+      item.month === parseInt(filterMonth) && 
+      item.year === parseInt(filterYear)
+    );
+
+    const totalAmount = filtered.reduce((acc, curr) => acc + curr.amount, 0);
+    const totalCount = filtered.reduce((acc, curr) => acc + curr.paymentCount, 0);
+
+    return { items: filtered, totalAmount, totalCount };
+  }, [monthlyEarnings, filterMonth, filterYear]);
+
+  // --- Daily Calculation ---
+  const dailyData = useMemo(() => {
+    if (!selectedDate) return { items: [], totalAmount: 0, totalCount: 0 };
+    
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    
+    // Filter raw payments for this date
+    const dailyPayments = payments.filter(p => {
+      if (!p.date) return false;
+      return p.date.startsWith(dateStr); // match YYYY-MM-DD
+    });
+
+    // Group by Class
+    const classMap: {[key: string]: { className: string, amount: number, count: number }} = {};
+    let totalAmount = 0;
+
+    dailyPayments.forEach(p => {
+       const key = p.className || "Unknown Class";
+       if (!classMap[key]) {
+         classMap[key] = { className: key, amount: 0, count: 0 };
+       }
+       classMap[key].amount += p.amount;
+       classMap[key].count += 1;
+       totalAmount += p.amount;
+    });
+
+    return { 
+      items: Object.values(classMap), 
+      totalAmount, 
+      totalCount: dailyPayments.length 
+    };
+  }, [payments, selectedDate]);
+
+
+  return (
+    <div className="space-y-6">
+      {/* View Toggle */}
+      <div className="flex space-x-2">
+        <Button 
+          variant={viewMode === 'monthly' ? 'default' : 'outline'} 
+          onClick={() => setViewMode('monthly')}
+          className="flex-1"
+        >
+          <CalendarIcon className="mr-2 h-4 w-4" /> Monthly View
+        </Button>
+        <Button 
+          variant={viewMode === 'daily' ? 'default' : 'outline'} 
+          onClick={() => setViewMode('daily')}
+          className="flex-1"
+        >
+          <Clock className="mr-2 h-4 w-4" /> Daily View
+        </Button>
+      </div>
+
+      {/* Filters Area */}
+      {viewMode === 'monthly' ? (
+        <div className="flex gap-4">
+           <div className="grid gap-2 flex-1">
+              <label className="text-sm font-medium">Month</label>
+              <Select value={filterMonth} onValueChange={setFilterMonth}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({length: 12}, (_, i) => i + 1).map(m => (
+                    <SelectItem key={m} value={m.toString()}>{new Date(0, m-1).toLocaleString('default', { month: 'long' })}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+           </div>
+           <div className="grid gap-2 flex-1">
+              <label className="text-sm font-medium">Year</label>
+              <Select value={filterYear} onValueChange={setFilterYear}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[0,1,2,3,4].map(i => {
+                    const y = new Date().getFullYear() - i;
+                    return <SelectItem key={y} value={y.toString()}>{y}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+           </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">Select Date</label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant={"outline"}
+                className={`w-full justify-start text-left font-normal ${!selectedDate && "text-muted-foreground"}`}
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
         </div>
       )}
+
+      {/* Summary Card */}
+      <Card className={`text-white border-0 shadow-lg ${viewMode === 'monthly' ? 'bg-gradient-to-br from-green-500 to-green-700' : 'bg-gradient-to-br from-blue-500 to-blue-700'}`}>
+         <CardContent className="flex flex-col items-center justify-center py-8">
+            <h3 className="text-white/80 text-sm font-medium uppercase tracking-wider mb-2">
+               {viewMode === 'monthly' ? 'Total Earnings' : `Earnings on ${selectedDate ? format(selectedDate, 'dd/MM/yyyy') : 'Date'}`}
+            </h3>
+            <div className="text-4xl font-bold mb-1">
+               Rs. {(viewMode === 'monthly' ? monthlyData.totalAmount : dailyData.totalAmount).toFixed(2)}
+            </div>
+            <p className="text-white/80 text-sm">
+               {(viewMode === 'monthly' ? monthlyData.totalCount : dailyData.totalCount)} payments
+            </p>
+         </CardContent>
+      </Card>
+
+      {/* List */}
+      <div className="space-y-4">
+         {(viewMode === 'monthly' ? monthlyData.items : dailyData.items).length === 0 ? (
+           <div className="text-center py-10 text-muted-foreground">
+              <Wallet className="w-12 h-12 mx-auto mb-2 opacity-20" />
+              <p>No earnings found for this period.</p>
+           </div>
+         ) : (
+           (viewMode === 'monthly' ? monthlyData.items : dailyData.items).map((item, idx) => (
+             <Card key={idx} className="overflow-hidden">
+                <div className="flex items-center p-4">
+                   <div className={`p-3 rounded-xl mr-4 ${viewMode === 'monthly' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+                      {viewMode === 'monthly' ? <School className="w-6 h-6"/> : <Receipt className="w-6 h-6"/>}
+                   </div>
+                   <div className="flex-1">
+                      <h4 className="font-bold text-base">{item.className}</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {item.paymentCount || (item as any).count} payments
+                        {viewMode === 'monthly' && ` • ${new Date(0, (item as any).month - 1).toLocaleString('default', { month: 'long' })}`}
+                      </p>
+                   </div>
+                   <Badge variant="outline" className={`${viewMode === 'monthly' ? 'text-green-700 bg-green-50' : 'text-blue-700 bg-blue-50'} border-0 text-sm font-bold px-3 py-1`}>
+                      Rs. {item.amount.toFixed(2)}
+                   </Badge>
+                </div>
+             </Card>
+           ))
+         )}
+      </div>
     </div>
   );
 }
