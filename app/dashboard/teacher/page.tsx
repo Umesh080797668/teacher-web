@@ -353,9 +353,9 @@ function TeacherDashboardContent() {
       setAttendanceRecords(updatedRecords);
       setServerAttendanceRecords(updatedRecords);
       
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error marking attendance:', error);
-      toast.error(error.response?.data?.error || 'Failed to mark attendance');
+      toast.error((error as Error)?.message || 'Failed to mark attendance');
     } finally {
       setIsSaving(false);
     }
@@ -396,7 +396,7 @@ function TeacherDashboardContent() {
 
   // --- Attendance Logic Start ---
 
-  const hasUnsavedChanges = (currentRecords: any, serverRecords: any) => {
+  const hasUnsavedChanges = (currentRecords: Record<string, 'present' | 'absent' | 'late'>, serverRecords: Record<string, 'present' | 'absent' | 'late'>) => {
     const localKeys = Object.keys(currentRecords);
     const serverKeys = Object.keys(serverRecords);
     
@@ -1218,7 +1218,7 @@ function TeacherDashboardContent() {
                   />
                 )}
 
-                {Object.keys(attendanceRecords).length > 0 && (
+                {hasUnsavedChanges(attendanceRecords, serverAttendanceRecords) && (
                   <button
                     onClick={handleMarkAttendance}
                     className="w-full py-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium text-lg shadow-lg"
