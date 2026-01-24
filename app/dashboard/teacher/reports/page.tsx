@@ -83,8 +83,9 @@ import {
   Receipt
 } from 'lucide-react';
 import { reportsApi, paymentsApi, classesApi } from '@/lib/api';
-import type { Payment as APIPayment } from '@/lib/types';
+import type { Payment as APIPayment, Teacher } from '@/lib/types';
 import { useToast } from "@/components/ui/use-toast";
+import { useAuthStore } from '@/lib/store';
 
 // Types matching API responses
 interface AttendanceSummary {
@@ -169,6 +170,7 @@ interface GroupedStudentPayment {
 
 export default function ReportsPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState<string>("all");
@@ -186,16 +188,26 @@ export default function ReportsPage() {
 
   // Fetch all data
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user) {
+      loadData();
+    }
+  }, [user]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       // Get teacher ID from local storage or context if available, otherwise API handles auth
-      const userStr = localStorage.getItem('user');
-      const user = userStr ? JSON.parse(userStr) : null;
-      const teacherId = user?.id;
+      const teacher = user as Teacher;
+      // Ensure we have a valid teacherId. 
+      // Some parts of the app use 'teacherId' (string), others might use '_id' (ObjectId).
+      // The backend expects the custom 'teacherId' string for some queries.
+      const teacherId = teacher?.teacherId || teacher?._id;
+
+      if (!teacherId) {
+        console.warn('Teacher ID is missing, skipping report fetch');
+        setLoading(false);
+        return;
+      }
 
       // Fetch helper data
       const classesRes = await classesApi.getAll();

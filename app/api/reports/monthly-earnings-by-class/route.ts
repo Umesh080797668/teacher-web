@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import connectToDatabase from '@/lib/mongodb';
 import Payment from '@/lib/models/Payment';
 import Class from '@/lib/models/Class';
+import Teacher from '@/lib/models/Teacher';
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,9 +21,33 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 1. Get all classes for this teacher
-    // We need this to get class names and ensure we cover classes with 0 earnings
-    const classes = await Class.find({ teacherId });
+    // 1. Get Teacher to resolve internal _id
+    // server.js logic uses teacherId string to find Teacher, then uses Teacher._id for Class lookup
+    let teacher = await Teacher.findOne({ teacherId: teacherId });
+    if (!teacher) {
+        // Fallback: Check if teacherId passed is actually an ObjectId (if user passed _id)
+        if (mongoose.Types.ObjectId.isValid(teacherId)) {
+             teacher = await Teacher.findById(teacherId);
+        }
+    }
+
+    if (!teacher) {
+         return NextResponse.json(
+            { error: 'Teacher not found' },
+            { status: 404 }
+         );
+    }
+    
+    const teacherObjectId = teacher._id;
+
+    // 2. Get all classes for this teacher
+    // Try finding by ObjectId first (server.js style), then by String ID (web-interface style fallback)
+    let classes = await Class.find({ teacherId: teacherObjectId });
+    
+    if (classes.length === 0) {
+        // Fallback or mismatch check: Try finding by custom teacherId string
+        classes = await Class.find({ teacherId: teacher.teacherId });
+    }
     
     if (classes.length === 0) {
       return NextResponse.json([]);
