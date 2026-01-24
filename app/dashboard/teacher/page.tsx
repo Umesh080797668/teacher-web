@@ -24,6 +24,8 @@ function TeacherDashboardContent() {
   // Stats states
   const [todayAttendancePercentage, setTodayAttendancePercentage] = useState(0);
   const [paymentStatusPercentage, setPaymentStatusPercentage] = useState(0);
+  const [newStudentsThisMonth, setNewStudentsThisMonth] = useState(0);
+  const [newClassesThisMonth, setNewClassesThisMonth] = useState(0);
 
   // Update active tab when URL changes
   useEffect(() => {
@@ -148,6 +150,22 @@ function TeacherDashboardContent() {
       if (classesRes.data.length > 0 && !selectedClass) {
         setSelectedClass(classesRes.data[0]);
       }
+
+      // Calculate new students this month
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const newStudentsCount = studentsRes.data.filter(student => {
+        const createdDate = new Date(student.createdAt || '');
+        return createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
+      }).length;
+      setNewStudentsThisMonth(newStudentsCount);
+
+      // Calculate new classes this month
+      const newClassesCount = classesRes.data.filter(cls => {
+        const createdDate = new Date(cls.createdAt || '');
+        return createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
+      }).length;
+      setNewClassesThisMonth(newClassesCount);
 
       // Calculate today's attendance percentage
       const today = new Date().toISOString().split('T')[0];
@@ -318,7 +336,7 @@ function TeacherDashboardContent() {
                     </svg>
                   </div>
                   <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
-                    +0
+                    +{newStudentsThisMonth}
                   </span>
                 </div>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{students.length}</p>
@@ -350,7 +368,7 @@ function TeacherDashboardContent() {
                     </svg>
                   </div>
                   <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
-                    +0
+                    +{newClassesThisMonth}
                   </span>
                 </div>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{classes.length}</p>
