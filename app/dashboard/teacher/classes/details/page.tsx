@@ -64,7 +64,13 @@ function ClassDetailsContent() {
       // Filter students for this class
       const classStudents = studentsRes.data.filter(s => s.classId === classId);
       setStudents(classStudents);
-      setAttendanceRecords(attendanceRes.data);
+      
+      // Filter attendance records for students in this class
+      const classStudentIds = new Set(classStudents.map(s => s._id));
+      const classAttendance = attendanceRes.data.filter(record => 
+        classStudentIds.has(record.studentId)
+      );
+      setAttendanceRecords(classAttendance);
     } catch (error) {
       console.error('Error loading class data:', error);
       toast.error('Failed to load class data');
@@ -130,7 +136,9 @@ function ClassDetailsContent() {
 
     try {
       // Generate student ID if not provided
-      const studentId = newStudent.studentId || `STU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const timestamp = Date.now().toString().substring(8);
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      const studentId = newStudent.studentId || `STU${timestamp}${random}`;
       
       await studentsApi.create({
         name: newStudent.name,
@@ -278,7 +286,9 @@ function ClassDetailsContent() {
             <button
               onClick={() => {
                 // pre-generate student id and show modal (readonly)
-                const generated = `STU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                const timestamp = Date.now().toString().substring(8);
+                const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                const generated = `STU${timestamp}${random}`;
                 setNewStudent({ name: '', email: '', studentId: generated });
                 setShowAddStudentModal(true);
               }}

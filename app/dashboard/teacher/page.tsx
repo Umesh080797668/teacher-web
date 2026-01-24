@@ -17,6 +17,7 @@ function TeacherDashboardContent() {
   const { theme } = useTheme();
   const [classes, setClasses] = useState<Class[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [allAttendance, setAllAttendance] = useState<Attendance[]>([]);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'classes' | 'students' | 'attendance'>((searchParams?.get('tab') as any) || 'overview');
@@ -149,6 +150,7 @@ function TeacherDashboardContent() {
 
       setClasses(classesRes.data);
       setStudents(studentsRes.data);
+      setAllAttendance(attendanceRes.data);
       
       if (classesRes.data.length > 0 && !selectedClass) {
         setSelectedClass(classesRes.data[0]);
@@ -538,6 +540,25 @@ function TeacherDashboardContent() {
 
                   return paginatedClasses.map((cls) => {
                     const classStudents = getClassStudents(cls._id);
+                    
+                    // Calculate monthly attendance rate
+                    const now = new Date();
+                    const currentMonth = now.getMonth();
+                    const currentYear = now.getFullYear();
+                    
+                    const classStudentIds = new Set(classStudents.map(s => s._id));
+                    const classMonthAttendance = allAttendance.filter(record => {
+                       const recordDate = new Date(record.date);
+                       return classStudentIds.has(record.studentId) && 
+                              recordDate.getMonth() === currentMonth && 
+                              recordDate.getFullYear() === currentYear;
+                    });
+                    
+                    const presentCount = classMonthAttendance.filter(r => r.status === 'present').length;
+                    const monthlyRate = classMonthAttendance.length > 0 
+                      ? Math.round((presentCount / classMonthAttendance.length) * 100) 
+                      : 0;
+
                     return (
                       <div key={cls._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition group">
                         <div className="flex items-start justify-between mb-4">
@@ -568,6 +589,15 @@ function TeacherDashboardContent() {
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-sm text-gray-600 dark:text-gray-400">Students</span>
                             <span className="text-2xl font-bold text-gray-900 dark:text-white">{classStudents.length}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Attendance (Month)</span>
+                            <span className={`text-xl font-bold ${
+                              monthlyRate >= 80 ? 'text-green-600 dark:text-green-400' :
+                              monthlyRate >= 50 ? 'text-yellow-600 dark:text-yellow-400' :
+                              'text-red-600 dark:text-red-400'
+                            }`}>{monthlyRate}%</span>
                           </div>
 
                           {classStudents.length > 0 && (
@@ -622,7 +652,9 @@ function TeacherDashboardContent() {
               <button
                 onClick={() => {
                   // generate student id and show modal (readonly)
-                  const generated = `STU-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+                  const timestamp = Date.now().toString().substring(8);
+                  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                  const generated = `STU${timestamp}${random}`;
                   setNewStudent({ name: '', email: '', classId: '', studentId: generated });
                   setShowAddStudentModal(true);
                 }}
