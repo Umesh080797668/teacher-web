@@ -21,6 +21,10 @@ function TeacherDashboardContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'classes' | 'students' | 'attendance'>((searchParams?.get('tab') as any) || 'overview');
 
+  // Stats states
+  const [todayAttendancePercentage, setTodayAttendancePercentage] = useState(0);
+  const [paymentStatusPercentage, setPaymentStatusPercentage] = useState(0);
+
   // Update active tab when URL changes
   useEffect(() => {
     const tab = searchParams?.get('tab');
@@ -131,9 +135,11 @@ function TeacherDashboardContent() {
     
     setIsLoading(true);
     try {
-      const [classesRes, studentsRes] = await Promise.all([
+      const [classesRes, studentsRes, attendanceRes, paymentsRes] = await Promise.all([
         classesApi.getAll(teacherId),
         studentsApi.getAll(teacherId),
+        attendanceApi.getAll({ teacherId }),
+        paymentsApi.getAll({ teacherId }),
       ]);
 
       setClasses(classesRes.data);
@@ -142,6 +148,25 @@ function TeacherDashboardContent() {
       if (classesRes.data.length > 0 && !selectedClass) {
         setSelectedClass(classesRes.data[0]);
       }
+
+      // Calculate today's attendance percentage
+      const today = new Date().toISOString().split('T')[0];
+      const todayAttendance = attendanceRes.data.filter(record => 
+        record.date.startsWith(today) && record.status === 'present'
+      );
+      const uniquePresentStudents = new Set(todayAttendance.map(record => record.studentId));
+      const attendancePercentage = studentsRes.data.length > 0 
+        ? Math.round((uniquePresentStudents.size / studentsRes.data.length) * 100) 
+        : 0;
+      setTodayAttendancePercentage(attendancePercentage);
+
+      // Calculate payment status percentage (students with at least one payment)
+      const studentsWithPayments = new Set(paymentsRes.data.map(payment => payment.studentId));
+      const paymentPercentage = studentsRes.data.length > 0 
+        ? Math.round((studentsWithPayments.size / studentsRes.data.length) * 100) 
+        : 0;
+      setPaymentStatusPercentage(paymentPercentage);
+
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
@@ -309,10 +334,10 @@ function TeacherDashboardContent() {
                     </svg>
                   </div>
                   <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
-                    0%
+                    {todayAttendancePercentage}%
                   </span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">0%</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{todayAttendancePercentage}%</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Today's Attendance</p>
               </div>
 
@@ -341,10 +366,10 @@ function TeacherDashboardContent() {
                     </svg>
                   </div>
                   <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
-                    0%
+                    {paymentStatusPercentage}%
                   </span>
                 </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">0%</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{paymentStatusPercentage}%</p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Payment Status</p>
               </div>
             </div>
@@ -1024,20 +1049,5 @@ function TeacherDashboardContent() {
         </div>
       )}
     </div>
-  );
-}
-
-export default function TeacherDashboardPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
-        </div>
-      </div>
-    }>
-      <TeacherDashboardContent />
-    </Suspense>
   );
 }
