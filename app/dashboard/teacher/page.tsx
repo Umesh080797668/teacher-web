@@ -547,7 +547,7 @@ function TeacherDashboardContent() {
                   </span>
                 </div>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{todayAttendancePercentage}%</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Today's Attendance</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Today&apos;s Attendance</p>
               </div>
 
               {/* Total Classes Card */}
@@ -708,6 +708,26 @@ function TeacherDashboardContent() {
                   const endIndex = startIndex + CLASSES_PER_PAGE;
                   const paginatedClasses = filteredClasses.slice(startIndex, endIndex);
 
+                  if (paginatedClasses.length === 0 && filteredClasses.length > 0) {
+                    // This means we're on a page that doesn't exist, reset to page 1
+                    setClassesCurrentPage(1);
+                    return null;
+                  }
+
+                  if (filteredClasses.length === 0) {
+                    return (
+                      <div className="col-span-full bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+                        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No classes found</h3>
+                        <p className="text-gray-600 dark:text-gray-400">No classes match your search. Try a different search term.</p>
+                      </div>
+                    );
+                  }
+
                   return paginatedClasses.map((cls) => {
                     const classStudents = getClassStudents(cls._id);
                     
@@ -811,19 +831,6 @@ function TeacherDashboardContent() {
                   });
                 })()}
               </div>
-
-              {/* Empty state for Classes */}
-              {filteredClasses.length === 0 && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
-                  <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No classes found</h3>
-                  <p className="text-gray-600 dark:text-gray-400">No classes match your search. Try a different search term.</p>
-                </div>
-              )}
 
               {/* Pagination for Classes */}
               {classes.filter(cls => cls.name.toLowerCase().includes(searchQuery.toLowerCase())).length > CLASSES_PER_PAGE && (

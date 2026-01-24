@@ -115,9 +115,9 @@ function ClassDetailsContent() {
       toast.success('Class updated successfully');
       setShowEditModal(false);
       loadClassData();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error updating class:', error);
-      toast.error(error.response?.data?.error || 'Failed to update class');
+      toast.error((error as Error)?.message || 'Failed to update class');
     }
   };
 
@@ -128,9 +128,9 @@ function ClassDetailsContent() {
       await classesApi.delete(classData._id);
       toast.success('Class deleted successfully');
       router.push('/dashboard/teacher');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting class:', error);
-      toast.error(error.response?.data?.error || 'Failed to delete class');
+      toast.error((error as Error)?.message || 'Failed to delete class');
     }
   };
 
@@ -157,9 +157,9 @@ function ClassDetailsContent() {
       setShowAddStudentModal(false);
       setNewStudent({ name: '', email: '', studentId: '' });
       loadClassData();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding student:', error);
-      toast.error(error.response?.data?.error || 'Failed to add student');
+      toast.error((error as Error)?.message || 'Failed to add student');
     }
   };
 
@@ -170,9 +170,9 @@ function ClassDetailsContent() {
       loadClassData();
       setDeleteStudentId(null);
       setDeleteStudentName('');
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting student:', error);
-      toast.error(error.response?.data?.error || 'Failed to delete student');
+      toast.error((error as Error)?.message || 'Failed to delete student');
     }
   };
 
@@ -329,92 +329,91 @@ function ClassDetailsContent() {
           </div>
 
           {students.length > 0 ? (
-            <div className="space-y-3">
-              {(() => {
-                const filteredStudents = students.filter(student => {
-                  if (!searchQuery) return true;
-                  const query = searchQuery.toLowerCase();
-                  return student.name.toLowerCase().includes(query) || student.studentId.toLowerCase().includes(query);
-                });
-                const startIndex = (studentsCurrentPage - 1) * STUDENTS_PER_PAGE;
-                const endIndex = startIndex + STUDENTS_PER_PAGE;
-                const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
-
-                return paginatedStudents.map((student) => {
-                  const attendanceRate = getStudentAttendanceRate(student.studentId);
-                  
-                  return (
-                    <div key={student._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition">
-                      <div className="flex items-center space-x-4 flex-1">
-                        <div className="w-12 h-12 bg-indigo-100 dark:bg-slate-600 rounded-full flex items-center justify-center">
-                          <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
-                            {student.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">{student.name}</h3>
-                          <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">{student.studentId}</p>
-                          {student.email && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Attendance</p>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-24 bg-gray-200 dark:bg-slate-600 rounded-full h-2">
-                              <div
-                                className="bg-green-500 h-2 rounded-full"
-                                style={{ width: `${attendanceRate}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {attendanceRate.toFixed(0)}%
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setDeleteStudentId(student._id);
-                          setDeleteStudentName(student.name);
-                        }}
-                        className="ml-4 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-600 rounded-lg transition"
-                        title="Delete student"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-
-            {/* Empty state for search */}
-            {(() => {
+            (() => {
               const filteredStudents = students.filter(student => {
                 if (!searchQuery) return true;
                 const query = searchQuery.toLowerCase();
                 return student.name.toLowerCase().includes(query) || student.studentId.toLowerCase().includes(query);
               });
-              return filteredStudents.length === 0 && students.length > 0 ? (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                  <svg className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <p className="text-lg font-medium text-gray-900 dark:text-white">No students found</p>
-                  <p className="text-sm mt-2 text-gray-500 dark:text-gray-400">No students match your search. Try a different search term.</p>
+
+              if (filteredStudents.length === 0) {
+                return (
+                  <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <svg className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <p className="text-lg font-medium text-gray-900 dark:text-white">No students found</p>
+                    <p className="text-sm mt-2 text-gray-500 dark:text-gray-400">No students match your search. Try a different search term.</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-3">
+                  {(() => {
+                    const startIndex = (studentsCurrentPage - 1) * STUDENTS_PER_PAGE;
+                    const endIndex = startIndex + STUDENTS_PER_PAGE;
+                    const paginatedStudents = filteredStudents.slice(startIndex, endIndex);
+
+                    return paginatedStudents.map((student) => {
+                      const attendanceRate = getStudentAttendanceRate(student.studentId);
+                      
+                      return (
+                        <div key={student._id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-600 transition">
+                          <div className="flex items-center space-x-4 flex-1">
+                            <div className="w-12 h-12 bg-indigo-100 dark:bg-slate-600 rounded-full flex items-center justify-center">
+                              <span className="text-indigo-600 dark:text-indigo-400 font-semibold text-lg">
+                                {student.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <h3 className="font-semibold text-gray-900 dark:text-white">{student.name}</h3>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">{student.studentId}</p>
+                              {student.email && (
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{student.email}</p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Attendance</p>
+                              <div className="flex items-center space-x-2">
+                                <div className="w-24 bg-gray-200 dark:bg-slate-600 rounded-full h-2">
+                                  <div
+                                    className="bg-green-500 h-2 rounded-full"
+                                    style={{ width: `${attendanceRate}%` }}
+                                  ></div>
+                                </div>
+                                <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                  {attendanceRate.toFixed(0)}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setDeleteStudentId(student._id);
+                              setDeleteStudentName(student.name);
+                            }}
+                            className="ml-4 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-600 rounded-lg transition"
+                            title="Delete student"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
-              ) : null;
-            })()}
+              );
+            })()
           ) : (
             <div className="text-center py-12 text-gray-500 dark:text-gray-400">
               <svg className="w-16 h-16 mx-auto mb-4 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
               <p className="text-lg font-medium text-gray-900 dark:text-white">No students in this class yet</p>
-              <p className="text-sm mt-2 text-gray-500 dark:text-gray-400">Click "Add Student" to add students to this class</p>
+              <p className="text-sm mt-2 text-gray-500 dark:text-gray-400">Click &quot;Add Student&quot; to add students to this class</p>
             </div>
           )}
           
@@ -485,7 +484,7 @@ function ClassDetailsContent() {
             </div>
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 text-center">Delete Class</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6 text-center">
-              Are you sure you want to delete "{classData.name}"? This action cannot be undone.
+              Are you sure you want to delete &quot;{classData.name}&quot;? This action cannot be undone.
             </p>
 
             <div className="flex space-x-3">
