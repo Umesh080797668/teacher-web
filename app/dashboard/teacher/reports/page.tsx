@@ -231,8 +231,28 @@ export default function ReportsPage() {
         reportsApi.getMonthlyEarningsByClass({ teacherId })
       ]);
 
-      setSummary(summaryRes.data);
-      setMonthlyStats(monthlyRes.data || []);
+      // Process data to match UI expectations
+      const rawSummary = summaryRes.data;
+      // Map backend fields to frontend interface if needed
+      if (rawSummary) {
+         setSummary({
+           presentCount: rawSummary.presentCount ?? rawSummary.presentToday ?? 0,
+           absentCount: rawSummary.absentCount ?? rawSummary.absentToday ?? 0,
+           lateCount: rawSummary.lateCount ?? rawSummary.lateToday ?? 0,
+           leaveCount: rawSummary.leaveCount ?? 0,
+           totalStudents: rawSummary.totalStudents ?? 0,
+           attendanceRate: rawSummary.attendanceRate ?? 
+             (rawSummary.totalStudents ? 
+               ((rawSummary.presentToday || 0) + (rawSummary.lateToday || 0)) / rawSummary.totalStudents * 100 
+               : 0)
+         });
+      }
+
+      setMonthlyStats((monthlyRes.data || []).map((s: any) => ({
+        ...s,
+        attendanceRate: s.attendanceRate ?? s.averageRate ?? 0
+      })));
+
       setDailyClassStats(dailyClassRes.data || []);
       const studentsData = (studentsRes.data || []) as StudentReportItem[];
       setStudentReports(studentsData);
