@@ -71,56 +71,57 @@ function TeacherDashboardContent() {
       return;
     }
 
-    let intervalId: NodeJS.Timeout | null = null;
+    let timeoutId: NodeJS.Timeout;
+    let isMounted = true;
 
     const checkSessionStatus = async () => {
+      if (!isMounted) return;
+
       try {
         // Use the proper API method instead of direct fetch
         const response = await sessionApi.verifySession(session.sessionId);
 
         // If session verification fails or session is not valid
-        if (!response.data || !response.data.valid) {
+        if (response.data && !response.data.valid) {
           console.log('Session is no longer valid, logging out...');
           toast.error('Your session has been disconnected');
           logout();
           router.push('/login');
+          return; // Stop polling
         }
       } catch (error: any) {
         // Handle API errors gracefully
-        if (error.response?.status === 404) {
+        if (error?.response?.status === 404) {
           console.log('Session not found or expired, logging out...');
           toast.error('Your session has been disconnected');
           logout();
           router.push('/login');
-        } else if (error.response?.status === 401) {
+          return; // Stop polling
+        } else if (error?.response?.status === 401) {
           console.log('Session unauthorized, logging out...');
           toast.error('Your session has expired');
           logout();
           router.push('/login');
-        } else if (error.response?.status === 500) {
+          return; // Stop polling
+        } else if (error?.response?.status === 500) {
           console.log('Server error checking session, will retry...');
-          // Don't logout on server errors - just retry on next interval
         } else {
-          // Network error or other issues - don't logout, just log
-          console.log('Session verification network error (will retry):', error.message);
+          console.log('Session verification network error (will retry):', error?.message);
         }
+      }
+
+      // Schedule next poll only after this one finishes
+      if (isMounted) {
+        timeoutId = setTimeout(checkSessionStatus, 5000);
       }
     };
 
-    // Wait 3 seconds before starting to poll to give time for initial setup
-    const initialDelay = setTimeout(() => {
-      // Check immediately after delay
-      checkSessionStatus();
-      
-      // Then check session status every 5 seconds
-      intervalId = setInterval(checkSessionStatus, 5000);
-    }, 3000);
+    // Wait 3 seconds before starting to poll
+    timeoutId = setTimeout(checkSessionStatus, 3000);
 
     return () => {
-      clearTimeout(initialDelay);
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
+      isMounted = false;
+      clearTimeout(timeoutId);
     };
   }, [isAuthenticated, userType, session, logout, router]);
 
@@ -134,10 +135,10 @@ function TeacherDashboardContent() {
     loadData();
   }, [isAuthenticated, userType, router, isHydrated]);
 
-  const loadData = async () => {
+  const loadData = async (silent = false) => {
     if (!teacherId) return;
     
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     try {
       const [classesRes, studentsRes, attendanceRes, paymentsRes] = await Promise.all([
         classesApi.getAll(teacherId),
@@ -225,7 +226,7 @@ function TeacherDashboardContent() {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -236,14 +237,16 @@ function TeacherDashboardContent() {
     }
 
     try {
-      await classesApi.create({
+      const response = await classesApi.create({
         name: newClass.name,
-        teacherId: teacher._id,
+        teacherId: teacher.teacherId,
       });
       toast.success('Class created successfully');
       setShowAddClassModal(false);
       setNewClass({ name: '' });
-      loadData();
+      // Optimistic update instead of full reload
+      setClasses(prev => [response.data, ...prev]);
+      setNewClassesThisMonth(prev => prev + 1);
     } catch (error: any) {
       console.error('Error creating class:', error);
       toast.error(error.response?.data?.error || 'Failed to create class');
@@ -257,11 +260,12 @@ function TeacherDashboardContent() {
     }
 
     try {
-      await studentsApi.create(newStudent);
+      const response = await studentsApi.create(newStudent);
       toast.success('Student added successfully');
-  setShowAddStudentModal(false);
-  setNewStudent({ name: '', email: '', classId: '', studentId: '' });
-      loadData();
+      setShowAddStudentModal(false);
+      setNewStudent({ name: '', email: '', classId: '', studentId: '' });
+      setStudents(prev => [response.data, ...prev]);
+      setNewStudentsThisMonth(prev => prev + 1);
     } catch (error: any) {
       console.error('Error creating student:', error);
       toast.error(error.response?.data?.error || 'Failed to add student');
@@ -295,7 +299,7 @@ function TeacherDashboardContent() {
       await attendanceApi.bulkCreate(recordsToSave);
       toast.success('Attendance marked successfully');
       setAttendanceRecords({});
-      loadData();
+      loadData(true);
     } catch (error: any) {
       console.error('Error marking attendance:', error);
       toast.error(error.response?.data?.error || 'Failed to mark attendance');
@@ -312,7 +316,7 @@ function TeacherDashboardContent() {
       await classesApi.delete(classId);
       toast.success('Class deleted successfully');
       setDeleteClassId(null);
-      loadData();
+      setClasses(prev => prev.filter(c => c._id !== classId));
     } catch (error: any) {
       console.error('Error deleting class:', error);
       toast.error(error.response?.data?.error || 'Failed to delete class');
@@ -324,7 +328,7 @@ function TeacherDashboardContent() {
       await studentsApi.delete(studentId);
       toast.success('Student deleted successfully');
       setDeleteStudentId(null);
-      loadData();
+      setStudents(prev => prev.filter(s => s._id !== studentId));
     } catch (error: any) {
       console.error('Error deleting student:', error);
       toast.error(error.response?.data?.error || 'Failed to delete student');
