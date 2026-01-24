@@ -26,6 +26,8 @@ function TeacherDashboardContent() {
   const [paymentStatusPercentage, setPaymentStatusPercentage] = useState(0);
   const [newStudentsThisMonth, setNewStudentsThisMonth] = useState(0);
   const [newClassesThisMonth, setNewClassesThisMonth] = useState(0);
+  const [attendanceTrend, setAttendanceTrend] = useState(0);
+  const [paymentTrend, setPaymentTrend] = useState(0);
 
   // Update active tab when URL changes
   useEffect(() => {
@@ -178,6 +180,19 @@ function TeacherDashboardContent() {
         : 0;
       setTodayAttendancePercentage(attendancePercentage);
 
+      // Calculate yesterday's attendance percentage for trend
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const yesterdayAttendance = attendanceRes.data.filter(record => 
+        record.date.slice(0, 10) === yesterdayStr
+      );
+      const yesterdayPresentCount = yesterdayAttendance.filter(record => record.status === 'present').length;
+      const yesterdayAttendancePercentage = yesterdayAttendance.length > 0 
+        ? Math.round((yesterdayPresentCount / yesterdayAttendance.length) * 100) 
+        : 0;
+      setAttendanceTrend(attendancePercentage - yesterdayAttendancePercentage);
+
       // Calculate payment status percentage (students who paid this month)
       const thisMonthPayments = paymentsRes.data.filter(payment => {
         const paymentDate = new Date(payment.date);
@@ -188,6 +203,23 @@ function TeacherDashboardContent() {
         ? Math.round((studentsWithPayments.size / studentsRes.data.length) * 100) 
         : 0;
       setPaymentStatusPercentage(paymentPercentage);
+
+      // Calculate last month's payment percentage for trend
+      const lastMonthDate = new Date();
+      lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+      const lastMonth = lastMonthDate.getMonth();
+      const lastMonthYear = lastMonthDate.getFullYear();
+      
+      const lastMonthPayments = paymentsRes.data.filter(payment => {
+        const paymentDate = new Date(payment.date);
+        return paymentDate.getMonth() === lastMonth && paymentDate.getFullYear() === lastMonthYear;
+      });
+      const lastMonthStudentsWithPayments = new Set(lastMonthPayments.map(payment => payment.studentId));
+      const lastMonthPaymentPercentage = studentsRes.data.length > 0
+        ? Math.round((lastMonthStudentsWithPayments.size / studentsRes.data.length) * 100)
+        : 0;
+      
+      setPaymentTrend(paymentPercentage - lastMonthPaymentPercentage);
 
     } catch (error) {
       console.error('Error loading data:', error);
@@ -356,7 +388,7 @@ function TeacherDashboardContent() {
                     </svg>
                   </div>
                   <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
-                    {todayAttendancePercentage}%
+                    {attendanceTrend >= 0 ? '+' : ''}{attendanceTrend}%
                   </span>
                 </div>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{todayAttendancePercentage}%</p>
@@ -388,7 +420,7 @@ function TeacherDashboardContent() {
                     </svg>
                   </div>
                   <span className="px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-semibold rounded-full">
-                    {paymentStatusPercentage}%
+                    {paymentTrend >= 0 ? '+' : ''}{paymentTrend}%
                   </span>
                 </div>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{paymentStatusPercentage}%</p>
