@@ -178,6 +178,13 @@ export default function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().getMonth() + 1 + "");
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear() + "");
   const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [activeTab, setActiveTab] = useState("summary");
+  const [tabDataLoaded, setTabDataLoaded] = useState<{[key: string]: boolean}>({
+    summary: false,
+    students: false,
+    payments: false,
+    earnings: false
+  });
   const [showDownloadDialog, setShowDownloadDialog] = useState(false);
   const [downloadMonth, setDownloadMonth] = useState(new Date().getMonth() + 1);
   const [downloadYear, setDownloadYear] = useState(new Date().getFullYear());
@@ -193,11 +200,11 @@ export default function ReportsPage() {
   // Fetch all data
   useEffect(() => {
     if (user) {
-      loadData();
+      loadData(activeTab);
     }
-  }, [user]);
+  }, [user, activeTab]);
 
-  const loadData = async (retryCount = 0) => {
+  const loadData = async (tab: string, retryCount = 0) => {
     const maxRetries = 2;
     const baseDelay = 1000; // 1 second
 
@@ -217,74 +224,103 @@ export default function ReportsPage() {
         return;
       }
 
-      // Fetch helper data
-      const classesRes = await classesApi.getAll();
+      // Fetch helper data (always needed)
+      const classesRes = await classesApi.getAll(teacherId);
       const classesData = classesRes.data || [];
       setClasses(classesData);
 
-      // Parallel fetch for report tabs
-      const [
-        summaryRes,
-        monthlyRes,
-        dailyClassRes,
-        studentsRes,
-        paymentsRes, // Fetch raw payments for filtering
-        earningsRes
-      ] = await Promise.all([
-        reportsApi.getAttendanceSummary({ teacherId }),
-        reportsApi.getMonthlyStats({ teacherId, year: parseInt(selectedYear) }),
-        reportsApi.getDailyByClass({ teacherId }), // Defaults to today
-        reportsApi.getStudentReports({ teacherId }),
-        paymentsApi.getAll({ teacherId }), 
-        reportsApi.getMonthlyEarningsByClass({ teacherId })
-      ]);
+      // Load data based on active tab
+      const promises = [];
 
-      // Process data to match UI expectations
-      const rawSummary = summaryRes.data;
-      // Map backend fields to frontend interface if needed
-      if (rawSummary) {
-         setSummary({
-           presentCount: rawSummary.presentCount ?? rawSummary.presentToday ?? 0,
-           absentCount: rawSummary.absentCount ?? rawSummary.absentToday ?? 0,
-           lateCount: rawSummary.lateCount ?? rawSummary.lateToday ?? 0,
-           leaveCount: rawSummary.leaveCount ?? 0,
-           totalStudents: rawSummary.totalStudents ?? 0,
-           attendanceRate: rawSummary.attendanceRate ?? 
-             (rawSummary.totalStudents ? 
-               ((rawSummary.presentToday || 0) + (rawSummary.lateToday || 0)) / rawSummary.totalStudents * 100 
-               : 0)
-         });
+      if (tab === 'summary') {
+        promises.push(
+          reportsApi.getAttendanceSummary({ teacherId }),
+          reportsApi.getMonthlyStats({ teacherId, year: parseInt(selectedYear) }),
+          reportsApi.getDailyByClass({ teacherId })
+        );
+      } else if (tab === 'students') {
+        promises.push(reportsApi.getStudentReports({ teacherId }));
+      } else if (tab === 'payments') {
+        promises.push(paymentsApi.getAll({ teacherId }));
+      } else if (tab === 'earnings') {
+        promises.push(reportsApi.getMonthlyEarningsByClass({ teacherId }));
       }
 
-      setMonthlyStats((monthlyRes.data || []).map((s: any) => ({
-        ...s,
-        attendanceRate: s.attendanceRate ?? s.averageRate ?? 0
-      })));
+      const results = await Promise.all(promises);
 
-      setDailyClassStats(dailyClassRes.data || []);
-      const studentsData = (studentsRes.data || []) as StudentReportItem[];
-      setStudentReports(studentsData);
-      
-      // Map API payments to UI model
-      const classMap = new Map(classesData.map(c => [c._id, c.name]));
-      const studentMap = new Map(studentsData.map(s => [s.studentId, s.studentName]));
-      
-      const mappedPayments = (paymentsRes.data || []).map((p: APIPayment) => ({
-        _id: p._id,
-        studentId: p.studentId,
-        studentName: studentMap.get(p.studentId) || 'Unknown Student',
-        classId: p.classId,
-        className: classMap.get(p.classId) || 'Unknown Class',
-        amount: p.amount,
-        type: p.type,
-        month: p.month?.toString() || '', 
-        date: p.date,
-        status: 'Completed',
-        paymentMethod: 'Cash'
-      }));
+      // Process data based on tab
+      let resultIndex = 0;
 
-      setPayments(mappedPayments);
-      setMonthlyEarnings(earningsRes.data || []);
+      if (tab === 'summary') {
+        const [summaryRes, monthlyRes, dailyClassRes] = results;
+        
+        const rawSummary = summaryRes.data;
+        if (rawSummary) {
+           setSummary({
+             presentCount: rawSummary.presentCount ?? rawSummary.presentToday ?? 0,
+             absentCount: rawSummary.absentCount ?? rawSummary.absentToday ?? 0,
+             lateCount: rawSummary.lateCount ?? rawSummary.lateToday ?? 0,
+             leaveCount: rawSummary.leaveCount ?? 0,
+             totalStudents: rawSummary.totalStudents ?? 0,
+             attendanceRate: rawSummary.attendanceRate ?? 
+               (rawSummary.totalStudents ? 
+                 ((rawSummary.presentToday || 0) + (rawSummary.lateToday || 0)) / rawSummary.totalStudents * 100 
+                 : 0)
+           });
+        }
+
+        setMonthlyStats((monthlyRes.data || []).map((s: any) => ({
+          ...s,
+          attendanceRate: s.attendanceRate ?? s.averageRate ?? 0
+        })));
+
+        setDailyClassStats(dailyClassRes.data || []);
+        
+        setTabDataLoaded(prev => ({ ...prev, summary: true }));
+      } else if (tab === 'students') {
+        const studentsRes = results[0];
+        const studentsData = (studentsRes.data || []) as StudentReportItem[];
+        setStudentReports(studentsData);
+        setTabDataLoaded(prev => ({ ...prev, students: true }));
+      } else if (tab === 'payments') {
+        const paymentsRes = results[0];
+        
+        // If student reports aren't loaded yet, load them first
+        let studentMap = new Map();
+        if (studentReports.length === 0) {
+          try {
+            const studentsRes = await reportsApi.getStudentReports({ teacherId });
+            const studentsData = (studentsRes.data || []) as StudentReportItem[];
+            setStudentReports(studentsData);
+            studentMap = new Map(studentsData.map(s => [s.studentId, s.studentName]));
+          } catch (error) {
+            console.warn('Failed to load student data for payments mapping');
+          }
+        } else {
+          studentMap = new Map(studentReports.map(s => [s.studentId, s.studentName]));
+        }
+        
+        const mappedPayments = (paymentsRes.data || []).map((p: APIPayment) => ({
+          _id: p._id,
+          studentId: p.studentId,
+          studentName: studentMap.get(p.studentId) || 'Unknown Student',
+          classId: p.classId,
+          className: classesData.find(c => c._id === p.classId)?.name || 'Unknown Class',
+          amount: p.amount,
+          type: p.type,
+          month: p.month?.toString() || '', 
+          date: p.date,
+          status: 'Completed',
+          paymentMethod: 'Cash'
+        }));
+
+        setPayments(mappedPayments);
+        setTabDataLoaded(prev => ({ ...prev, payments: true }));
+      } else if (tab === 'earnings') {
+        const earningsRes = results[0];
+        setMonthlyEarnings(earningsRes.data || []);
+        setTabDataLoaded(prev => ({ ...prev, earnings: true }));
+      }
 
     } catch (error) {
       console.error("Failed to load reports data", error);
@@ -300,7 +336,7 @@ export default function ReportsPage() {
         console.log(`Retrying reports load in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
 
         setTimeout(() => {
-          loadData(retryCount + 1);
+          loadData(tab, retryCount + 1);
         }, delay);
         return; // Don't show error toast on retry
       }
@@ -439,7 +475,7 @@ export default function ReportsPage() {
             <button
               onClick={() => {
                 setHasError(false);
-                loadData();
+                loadData(activeTab);
               }}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
@@ -490,7 +526,7 @@ export default function ReportsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="summary" className="space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="summary">Attendance Summary</TabsTrigger>
           <TabsTrigger value="students">Student Reports</TabsTrigger>
@@ -499,34 +535,62 @@ export default function ReportsPage() {
         </TabsList>
 
         <TabsContent value="summary" className="space-y-4">
-          <AttendanceSummaryTab 
-            summary={summary}
-            monthlyStats={monthlyStats}
-            dailyClassStats={dailyClassStats}
-            classes={classes}
-          />
+          {tabDataLoaded.summary ? (
+            <AttendanceSummaryTab 
+              summary={summary}
+              monthlyStats={monthlyStats}
+              dailyClassStats={dailyClassStats}
+              classes={classes}
+            />
+          ) : (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span>Loading attendance summary...</span>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="students" className="space-y-4">
-           <StudentReportsTab 
-             reports={studentReports}
-             classes={classes}
-           />
+          {tabDataLoaded.students ? (
+            <StudentReportsTab 
+              reports={studentReports}
+              classes={classes}
+            />
+          ) : (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span>Loading student reports...</span>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="payments" className="space-y-4">
-          <PaymentsTab 
-            payments={payments}
-            classes={classes}
-          />
+          {tabDataLoaded.payments ? (
+            <PaymentsTab 
+              payments={payments}
+              classes={classes}
+            />
+          ) : (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span>Loading payments data...</span>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="earnings" className="space-y-4">
-          <EarningsTab 
-            monthlyEarnings={monthlyEarnings}
-            payments={payments} // Pass raw payments for daily view
-            classes={classes}
-          />
+          {tabDataLoaded.earnings ? (
+            <EarningsTab 
+              monthlyEarnings={monthlyEarnings}
+              payments={payments} // Pass raw payments for daily view
+              classes={classes}
+            />
+          ) : (
+            <div className="flex items-center justify-center p-8">
+              <Loader2 className="h-6 w-6 animate-spin mr-2" />
+              <span>Loading earnings data...</span>
+            </div>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -547,7 +611,7 @@ export default function ReportsPage() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     {Array.from({ length: 12 }, (_, i) => (
                       <SelectItem key={i + 1} value={(i + 1).toString()}>
                         {new Date(0, i).toLocaleString('default', { month: 'long' })}
@@ -562,7 +626,7 @@ export default function ReportsPage() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     {Array.from({ length: 5 }, (_, i) => {
                       const year = new Date().getFullYear() - 2 + i;
                       return (
@@ -730,7 +794,7 @@ function StudentReportsTab({ reports, classes }: { reports: StudentReportItem[],
             <SelectTrigger>
               <SelectValue placeholder="Filter by Class" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
               <SelectItem value="all">All Classes</SelectItem>
               {classes.map(cls => (
                 <SelectItem key={cls._id} value={cls._id}>{cls.name}</SelectItem>
@@ -848,7 +912,7 @@ function PaymentsTab({ payments, classes }: { payments: Payment[], classes: Clas
                   <SelectTrigger>
                     <SelectValue placeholder="All Classes" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     <SelectItem value="all">All Classes</SelectItem>
                     {classes.map(c => <SelectItem key={c._id} value={c._id}>{c.name}</SelectItem>)}
                   </SelectContent>
@@ -860,7 +924,7 @@ function PaymentsTab({ payments, classes }: { payments: Payment[], classes: Clas
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     {Array.from({length: 12}, (_, i) => i + 1).map(m => (
                       <SelectItem key={m} value={m.toString()}>{new Date(0, m-1).toLocaleString('default', { month: 'long' })}</SelectItem>
                     ))}
@@ -873,7 +937,7 @@ function PaymentsTab({ payments, classes }: { payments: Payment[], classes: Clas
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     {[0,1,2,3,4].map(i => {
                       const y = new Date().getFullYear() - i;
                       return <SelectItem key={y} value={y.toString()}>{y}</SelectItem>;
@@ -1047,7 +1111,7 @@ function EarningsTab({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                   {Array.from({length: 12}, (_, i) => i + 1).map(m => (
                     <SelectItem key={m} value={m.toString()}>{new Date(0, m-1).toLocaleString('default', { month: 'long' })}</SelectItem>
                   ))}
@@ -1060,7 +1124,7 @@ function EarningsTab({
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                   {[0,1,2,3,4].map(i => {
                     const y = new Date().getFullYear() - i;
                     return <SelectItem key={y} value={y.toString()}>{y}</SelectItem>;
