@@ -58,15 +58,8 @@ export default function AttendanceViewPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading attendance records...</p>
-        </div>
-      </div>
-    );
+  if (!isAuthenticated || userType !== 'teacher') {
+    return null; // Let useEffect handle redirect
   }
 
   return (
@@ -123,32 +116,45 @@ export default function AttendanceViewPage() {
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'daily' && (
-          <DailyViewTab
-            selectedDate={selectedDate}
-            setSelectedDate={setSelectedDate}
-            searchText={searchText}
-            setSearchText={setSearchText}
-            attendance={attendance}
-            students={students}
-            classes={classes}
-            isLoading={isLoading}
-          />
-        )}
+        {isLoading ? (
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12">
+            <div className="flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 dark:border-indigo-400 mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Loading attendance records...</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'daily' && (
+              <DailyViewTab
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                searchText={searchText}
+                setSearchText={setSearchText}
+                attendance={attendance}
+                students={students}
+                classes={classes}
+                isLoading={isLoading}
+              />
+            )}
 
-        {activeTab === 'monthly' && (
-          <MonthlyStatsTab
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            selectedYear={selectedYear}
-            setSelectedYear={setSelectedYear}
-            showAllMonths={showAllMonths}
-            setShowAllMonths={setShowAllMonths}
-            attendance={attendance}
-            students={students}
-            classes={classes}
-            isLoading={isLoading}
-          />
+            {activeTab === 'monthly' && (
+              <MonthlyStatsTab
+                selectedMonth={selectedMonth}
+                setSelectedMonth={setSelectedMonth}
+                selectedYear={selectedYear}
+                setSelectedYear={setSelectedYear}
+                showAllMonths={showAllMonths}
+                setShowAllMonths={setShowAllMonths}
+                attendance={attendance}
+                students={students}
+                classes={classes}
+                isLoading={isLoading}
+              />
+            )}
+          </>
         )}
       </main>
     </div>
