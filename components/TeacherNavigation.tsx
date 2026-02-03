@@ -27,6 +27,7 @@ export default function TeacherNavigation({ activeTab, onTabChange }: TeacherNav
     { id: 'classes', name: 'My Classes', icon: '🏫', path: '/dashboard/teacher?tab=classes' },
     { id: 'students', name: 'Students', icon: '🎓', path: '/dashboard/teacher?tab=students' },
     { id: 'attendance', name: 'Mark Attendance', icon: '✓', path: '/dashboard/teacher?tab=attendance' },
+    { id: 'view-attendance', name: 'View Attendance', icon: '✓', path: '/dashboard/teacher?tab=attendance-view' },
     { id: 'payments', name: 'Payments', icon: '💰', path: '/dashboard/teacher/payments' },
     { id: 'reports', name: 'Reports', icon: '📈', path: '/dashboard/teacher/reports' },
   ];
