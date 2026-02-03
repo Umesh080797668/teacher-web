@@ -27,13 +27,13 @@ export default function TeacherNavigation({ activeTab, onTabChange }: TeacherNav
     { id: 'classes', name: 'My Classes', icon: '🏫', path: '/dashboard/teacher?tab=classes' },
     { id: 'students', name: 'Students', icon: '🎓', path: '/dashboard/teacher?tab=students' },
     { id: 'attendance', name: 'Mark Attendance', icon: '✓', path: '/dashboard/teacher?tab=attendance' },
-    { id: 'view-attendance', name: 'View Attendance', icon: '✓', path: '/dashboard/teacher?tab=attendance-view' },
+    { id: 'view-attendance', name: 'View Attendance', icon: '👁️', path: '/dashboard/teacher/attendance-view' },
     { id: 'payments', name: 'Payments', icon: '💰', path: '/dashboard/teacher/payments' },
     { id: 'reports', name: 'Reports', icon: '📈', path: '/dashboard/teacher/reports' },
   ];
 
   const handleTabClick = (tabId: string, path: string) => {
-    if (tabId === 'payments' || tabId === 'reports') {
+    if (tabId === 'payments' || tabId === 'reports' || tabId === 'view-attendance') {
       router.push(path);
       return;
     }
@@ -55,6 +55,7 @@ export default function TeacherNavigation({ activeTab, onTabChange }: TeacherNav
   const currentTab = activeTab || (() => {
     if (pathname.includes('/payments')) return 'payments';
     if (pathname.includes('/reports')) return 'reports';
+    if (pathname.includes('/attendance-view')) return 'view-attendance';
     if (pathname.includes('/classes') && !pathname.includes('?')) return 'classes'; // for details page?
     return 'overview';
   })();

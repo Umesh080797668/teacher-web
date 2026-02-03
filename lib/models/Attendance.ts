@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 export interface IAttendance extends mongoose.Document {
   _id: mongoose.Types.ObjectId;
   studentId: string;
+  classId: string;
+  teacherId: string;
   date: Date;
   session: string; // e.g., 'morning', 'afternoon'
   status: 'present' | 'absent' | 'late';
@@ -14,6 +16,8 @@ export interface IAttendance extends mongoose.Document {
 
 const AttendanceSchema = new mongoose.Schema<IAttendance>({
   studentId: { type: String, required: true },
+  classId: { type: String, required: true },
+  teacherId: { type: String, required: true },
   date: { type: Date, required: true },
   session: { type: String, required: true },
   status: { type: String, enum: ['present', 'absent', 'late'], required: true },
