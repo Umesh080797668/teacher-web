@@ -177,6 +177,9 @@ export default function ReportsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().getMonth() + 1 + "");
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear() + "");
   const [classes, setClasses] = useState<ClassItem[]>([]);
+  const [showDownloadDialog, setShowDownloadDialog] = useState(false);
+  const [downloadMonth, setDownloadMonth] = useState(new Date().getMonth() + 1);
+  const [downloadYear, setDownloadYear] = useState(new Date().getFullYear());
 
   // Data states
   const [summary, setSummary] = useState<AttendanceSummary | null>(null);
@@ -290,9 +293,88 @@ export default function ReportsPage() {
     }
   };
 
+  const handleDownloadReport = () => {
+    try {
+      // Generate CSV content based on selected month/year
+      let csvContent = '';
+      const monthName = new Date(0, downloadMonth - 1).toLocaleString('default', { month: 'long' });
+      const filename = `Attendance_Report_${monthName}_${downloadYear}.csv`;
+
+      // Header
+      csvContent += `Attendance Report - ${monthName} ${downloadYear}\n\n`;
+
+      // Summary section
+      if (summary) {
+        csvContent += 'Attendance Summary\n';
+        csvContent += 'Metric,Value\n';
+        csvContent += `Total Present,${summary.presentCount}\n`;
+        csvContent += `Total Absent,${summary.absentCount}\n`;
+        csvContent += `Late Arrivals,${summary.lateCount}\n`;
+        csvContent += `On Leave,${summary.leaveCount}\n`;
+        csvContent += `Total Students,${summary.totalStudents}\n`;
+        csvContent += `Attendance Rate,${summary.attendanceRate.toFixed(1)}%\n\n`;
+      }
+
+      // Student reports
+      if (studentReports.length > 0) {
+        csvContent += 'Student Reports\n';
+        csvContent += 'Student Name,Roll Number,Class,Present,Absent,Late,Leave,Total Classes,Attendance Rate,Status\n';
+        studentReports.forEach(student => {
+          csvContent += `${student.studentName},${student.rollNumber},${student.className},${student.presentCount},${student.absentCount},${student.lateCount},${student.leaveCount},${student.totalClasses},${student.attendanceRate.toFixed(1)}%,${student.status}\n`;
+        });
+        csvContent += '\n';
+      }
+
+      // Payments
+      if (payments.length > 0) {
+        csvContent += 'Payments\n';
+        csvContent += 'Student Name,Class,Amount,Type,Date,Status,Payment Method\n';
+        payments.forEach(payment => {
+          csvContent += `${payment.studentName},${payment.className},${payment.amount},${payment.type},${payment.date},${payment.status},${payment.paymentMethod}\n`;
+        });
+        csvContent += '\n';
+      }
+
+      // Earnings
+      if (monthlyEarnings.length > 0) {
+        csvContent += 'Monthly Earnings by Class\n';
+        csvContent += 'Class,Month,Year,Amount,Payment Count\n';
+        monthlyEarnings.forEach(earning => {
+          earning.monthlyBreakdown.forEach(month => {
+            csvContent += `${earning.className},${month.month},${month.year},${month.amount},${month.paymentCount}\n`;
+          });
+        });
+      }
+
+      // Create and download the file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Download Complete",
+        description: `Report downloaded as ${filename}`,
+      });
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to generate report. Please try again.",
+        variant: "destructive",
+      });
+    }
+    setShowDownloadDialog(false);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
         <TeacherNavigation />
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -303,13 +385,41 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <TeacherNavigation />
-      <main className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2">
-          <h2 className="text-3xl font-bold tracking-tight">Reports & Analytics</h2>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.back()}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+              >
+                <svg className="w-6 h-6 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">Reports & Analytics</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400">View attendance reports and earnings</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={() => setShowDownloadDialog(true)}
+                variant="outline"
+                size="sm"
+                className="flex items-center space-x-2"
+              >
+                <Download className="h-4 w-4" />
+                <span>Download Report</span>
+              </Button>
+            </div>
+          </div>
         </div>
+      </header>
 
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="summary" className="space-y-4">
         <TabsList>
           <TabsTrigger value="summary">Attendance Summary</TabsTrigger>
@@ -349,6 +459,63 @@ export default function ReportsPage() {
           />
         </TabsContent>
       </Tabs>
+
+      {/* Download Report Dialog */}
+      <Dialog open={showDownloadDialog} onOpenChange={setShowDownloadDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Download Monthly Report</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Select month and year for the report:
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Month</label>
+                <Select value={downloadMonth.toString()} onValueChange={(value) => setDownloadMonth(parseInt(value))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <SelectItem key={i + 1} value={(i + 1).toString()}>
+                        {new Date(0, i).toLocaleString('default', { month: 'long' })}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Year</label>
+                <Select value={downloadYear.toString()} onValueChange={(value) => setDownloadYear(parseInt(value))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 5 }, (_, i) => {
+                      const year = new Date().getFullYear() - 2 + i;
+                      return (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => setShowDownloadDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleDownloadReport}>
+              Download
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       </main>
     </div>
   );
@@ -379,43 +546,43 @@ function AttendanceSummaryTab({
   return (
     <>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Present</CardTitle>
+            <CardTitle className="text-sm font-medium dark:text-white">Total Present</CardTitle>
             <CheckCircle2 className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.presentCount}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="text-2xl font-bold dark:text-white">{summary.presentCount}</div>
+            <p className="text-xs text-muted-foreground dark:text-gray-400">
               {summary.attendanceRate.toFixed(1)}% Attendance Rate
             </p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Absent</CardTitle>
+            <CardTitle className="text-sm font-medium dark:text-white">Total Absent</CardTitle>
             <XCircle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.absentCount}</div>
+            <div className="text-2xl font-bold dark:text-white">{summary.absentCount}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Late Arrivals</CardTitle>
+            <CardTitle className="text-sm font-medium dark:text-white">Late Arrivals</CardTitle>
             <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.lateCount}</div>
+            <div className="text-2xl font-bold dark:text-white">{summary.lateCount}</div>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="dark:bg-gray-800 dark:border-gray-700">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">On Leave</CardTitle>
+            <CardTitle className="text-sm font-medium dark:text-white">On Leave</CardTitle>
             <AlertCircle className="h-4 w-4 text-blue-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{summary.leaveCount}</div>
+            <div className="text-2xl font-bold dark:text-white">{summary.leaveCount}</div>
           </CardContent>
         </Card>
       </div>
