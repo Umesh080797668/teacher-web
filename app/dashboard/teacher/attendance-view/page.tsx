@@ -30,7 +30,7 @@ export default function AttendanceViewPage() {
       return;
     }
     loadData();
-  }, [isAuthenticated, userType, router, selectedMonth, selectedYear, selectedDate, activeTab]);
+  }, [isAuthenticated, userType, router, selectedMonth, selectedYear, activeTab]);
 
   const loadData = async () => {
     if (!teacherId) return;
