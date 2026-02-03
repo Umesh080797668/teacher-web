@@ -97,7 +97,7 @@ export const reportsApi = {
   getAttendanceSummary: (params: { teacherId?: string; month?: number; year?: number }) =>
     api.get('/api/reports/attendance-summary', { params }),
   getStudentReports: (params: { teacherId?: string; month?: number; year?: number }) =>
-    api.get('/api/reports/student-reports', { params }),
+    api.get('/api/reports/student-reports', { params, timeout: 30000 }), // 30 second timeout for student reports
   getClassStudentDetails: (params: { classId: string; month: number; year: number }) =>
     api.get('/api/reports/class-student-details', { params }),
   getMonthlyStats: (params: { teacherId?: string; year?: number }) =>

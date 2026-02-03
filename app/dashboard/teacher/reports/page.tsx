@@ -173,6 +173,7 @@ export default function ReportsPage() {
   const { user } = useAuthStore();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
   const [selectedClass, setSelectedClass] = useState<string>("all");
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().getMonth() + 1 + "");
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear() + "");
@@ -196,9 +197,13 @@ export default function ReportsPage() {
     }
   }, [user]);
 
-  const loadData = async () => {
+  const loadData = async (retryCount = 0) => {
+    const maxRetries = 2;
+    const baseDelay = 1000; // 1 second
+
     try {
       setLoading(true);
+      setHasError(false);
       // Get teacher ID from local storage or context if available, otherwise API handles auth
       const teacher = user as Teacher;
       // Ensure we have a valid teacherId. 
@@ -283,11 +288,41 @@ export default function ReportsPage() {
 
     } catch (error) {
       console.error("Failed to load reports data", error);
+
+      // Type guard for error
+      const isAxiosError = (err: unknown): err is { code?: string; message?: string; response?: { status?: number } } => {
+        return typeof err === 'object' && err !== null;
+      };
+
+      // Retry logic for timeout errors
+      if (isAxiosError(error) && (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) && retryCount < maxRetries) {
+        const delay = baseDelay * Math.pow(2, retryCount); // Exponential backoff
+        console.log(`Retrying reports load in ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+
+        setTimeout(() => {
+          loadData(retryCount + 1);
+        }, delay);
+        return; // Don't show error toast on retry
+      }
+
+      // Provide specific error messages based on error type
+      let errorMessage = "Failed to load reports data. Please try again.";
+      if (isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          errorMessage = "Request timed out. The server is taking too long to respond. Please try again.";
+        } else if (error.response?.status === 500) {
+          errorMessage = "Server error occurred. Please contact support if this persists.";
+        }
+      } else if (!navigator.onLine) {
+        errorMessage = "No internet connection. Please check your network and try again.";
+      }
+
       toast({
         title: "Error",
-        description: "Failed to load reports data. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
+      setHasError(true);
     } finally {
       setLoading(false);
     }
@@ -379,6 +414,41 @@ export default function ReportsPage() {
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <span className="ml-2">Loading reports...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+        <TeacherNavigation />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-red-500 mb-4">
+              <svg className="mx-auto h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Failed to Load Reports
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              There was an error loading the reports data. Please try again.
+            </p>
+            <button
+              onClick={() => {
+                setHasError(false);
+                loadData();
+              }}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              <svg className="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Retry
+            </button>
+          </div>
         </div>
       </div>
     );
