@@ -156,3 +156,8 @@ select {
   background-color: var(--card-bg);
   border-color: var(--border-color);
 }
+
+/* Animation utilities */
+.animation-delay-75 {
+  animation-delay: 0.075s;
+}

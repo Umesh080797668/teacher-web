@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import TeacherNavigation from '@/components/TeacherNavigation';
+import LoadingSpinner from '@/components/LoadingSpinner';
 import { useAuthStore } from '@/lib/store';
 import { useTheme } from '@/lib/ThemeContext';
 import { classesApi, studentsApi, attendanceApi, paymentsApi, sessionApi } from '@/lib/api';
@@ -19,7 +20,16 @@ function TeacherDashboardContent() {
   const [students, setStudents] = useState<Student[]>([]);
   const [allAttendance, setAllAttendance] = useState<Attendance[]>([]);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Cache for API responses to avoid repeated calls
+  const [dataCache, setDataCache] = useState<{
+    classes?: Class[];
+    students?: Student[];
+    attendance?: Attendance[];
+    payments?: Payment[];
+    lastFetch?: { [key: string]: number };
+  }>({});
+
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   const [activeTab, setActiveTab] = useState<'overview' | 'classes' | 'students' | 'attendance'>((searchParams?.get('tab') as any) || 'overview');
 
   // Stats states
@@ -57,6 +67,8 @@ function TeacherDashboardContent() {
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [tabLoading, setTabLoading] = useState(false);
   const [serverAttendanceRecords, setServerAttendanceRecords] = useState<Record<string, 'present' | 'absent' | 'late'>>({});
   const [pollingTimer, setPollingTimer] = useState<NodeJS.Timeout | null>(null);
   
@@ -100,9 +112,10 @@ function TeacherDashboardContent() {
 
     let timeoutId: NodeJS.Timeout;
     let isMounted = true;
+    let pollCount = 0;
 
     const checkSessionStatus = async () => {
-      if (!isMounted) return;
+      if (!isMounted || document.hidden) return; // Skip if page is hidden
 
       try {
         // Use the proper API method instead of direct fetch
@@ -138,8 +151,11 @@ function TeacherDashboardContent() {
       }
 
       // Schedule next poll only after this one finishes
+      // Increase interval progressively to reduce server load
       if (isMounted) {
-        timeoutId = setTimeout(checkSessionStatus, 5000);
+        pollCount++;
+        const interval = pollCount < 5 ? 15000 : 30000; // 15s for first 5 polls, then 30s
+        timeoutId = setTimeout(checkSessionStatus, interval);
       }
     };
 
@@ -154,108 +170,150 @@ function TeacherDashboardContent() {
 
   useEffect(() => {
     if (!isHydrated) return; // Wait for hydration
-    
+
     if (!isAuthenticated || userType !== 'teacher') {
       router.push('/login');
       return;
     }
-    loadData();
-  }, [isAuthenticated, userType, router, isHydrated]);
+    loadDataForTab(activeTab);
+  }, [isAuthenticated, userType, router, isHydrated, activeTab]);
 
-  const loadData = async (silent = false) => {
+  const loadDataForTab = async (tab: string, silent = false) => {
     if (!teacherId) return;
-    
-    if (!silent) setIsLoading(true);
-    try {
-      const [classesRes, studentsRes, attendanceRes, paymentsRes] = await Promise.all([
-        classesApi.getAll(teacherId),
-        studentsApi.getAll(teacherId),
-        attendanceApi.getAll({ teacherId }),
-        paymentsApi.getAll({ teacherId }),
-      ]);
 
-      setClasses(classesRes.data);
-      setStudents(studentsRes.data);
-      setAllAttendance(attendanceRes.data);
-      
-      if (classesRes.data.length > 0 && !selectedClass) {
-        setSelectedClass(classesRes.data[0]);
+    if (!silent) {
+      if (tab === activeTab) {
+        setIsLoading(true);
+      } else {
+        setTabLoading(true);
       }
-
-      // Calculate new students this month
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const newStudentsCount = studentsRes.data.filter(student => {
-        const createdDate = new Date(student.createdAt || '');
-        return createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
-      }).length;
-      setNewStudentsThisMonth(newStudentsCount);
-
-      // Calculate new classes this month
-      const newClassesCount = classesRes.data.filter(cls => {
-        const createdDate = new Date(cls.createdAt || '');
-        return createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
-      }).length;
-      setNewClassesThisMonth(newClassesCount);
-
-      // Calculate today's attendance percentage
-      const today = new Date().toISOString().split('T')[0];
-      const todayAttendance = attendanceRes.data.filter(record => 
-        record.date.slice(0, 10) === today
-      );
-      const presentCount = todayAttendance.filter(record => record.status === 'present').length;
-      const attendancePercentage = todayAttendance.length > 0 
-        ? Math.round((presentCount / todayAttendance.length) * 100) 
-        : 0;
-      setTodayAttendancePercentage(attendancePercentage);
-
-      // Calculate yesterday's attendance percentage for trend
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
-      const yesterdayAttendance = attendanceRes.data.filter(record => 
-        record.date.slice(0, 10) === yesterdayStr
-      );
-      const yesterdayPresentCount = yesterdayAttendance.filter(record => record.status === 'present').length;
-      const yesterdayAttendancePercentage = yesterdayAttendance.length > 0 
-        ? Math.round((yesterdayPresentCount / yesterdayAttendance.length) * 100) 
-        : 0;
-      setAttendanceTrend(attendancePercentage - yesterdayAttendancePercentage);
-
-      // Calculate payment status percentage (students who paid this month)
-      const thisMonthPayments = paymentsRes.data.filter(payment => {
-        const paymentDate = new Date(payment.date);
-        return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
-      });
-      const studentsWithPayments = new Set(thisMonthPayments.map(payment => payment.studentId));
-      const paymentPercentage = studentsRes.data.length > 0 
-        ? Math.round((studentsWithPayments.size / studentsRes.data.length) * 100) 
-        : 0;
-      setPaymentStatusPercentage(paymentPercentage);
-
-      // Calculate last month's payment percentage for trend
-      const lastMonthDate = new Date();
-      lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
-      const lastMonth = lastMonthDate.getMonth();
-      const lastMonthYear = lastMonthDate.getFullYear();
-      
-      const lastMonthPayments = paymentsRes.data.filter(payment => {
-        const paymentDate = new Date(payment.date);
-        return paymentDate.getMonth() === lastMonth && paymentDate.getFullYear() === lastMonthYear;
-      });
-      const lastMonthStudentsWithPayments = new Set(lastMonthPayments.map(payment => payment.studentId));
-      const lastMonthPaymentPercentage = studentsRes.data.length > 0
-        ? Math.round((lastMonthStudentsWithPayments.size / studentsRes.data.length) * 100)
-        : 0;
-      
-      setPaymentTrend(paymentPercentage - lastMonthPaymentPercentage);
-
+    }
+    try {
+      switch (tab) {
+        case 'overview':
+          await loadOverviewData();
+          break;
+        case 'classes':
+          await loadClassesData();
+          break;
+        case 'students':
+          await loadStudentsData();
+          break;
+        case 'attendance':
+          await loadAttendanceData();
+          break;
+        default:
+          await loadOverviewData();
+      }
     } catch (error) {
       console.error('Error loading data:', error);
       toast.error('Failed to load data');
     } finally {
-      if (!silent) setIsLoading(false);
+      if (!silent) {
+        if (tab === activeTab) {
+          setIsLoading(false);
+        } else {
+          setTabLoading(false);
+        }
+      }
     }
+  };
+
+  const loadOverviewData = async () => {
+    const [classesRes, studentsRes, attendanceRes, paymentsRes] = await Promise.all([
+      classesApi.getAll(teacherId),
+      studentsApi.getAll(teacherId),
+      attendanceApi.getAll({ teacherId }),
+      paymentsApi.getAll({ teacherId }),
+    ]);
+
+    setClasses(classesRes.data);
+    setStudents(studentsRes.data);
+    setAllAttendance(attendanceRes.data);
+
+    if (classesRes.data.length > 0 && !selectedClass) {
+      setSelectedClass(classesRes.data[0]);
+    }
+
+    // Calculate stats
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    const newStudentsCount = studentsRes.data.filter(student => {
+      const createdDate = new Date(student.createdAt || '');
+      return createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
+    }).length;
+    setNewStudentsThisMonth(newStudentsCount);
+
+    const newClassesCount = classesRes.data.filter(cls => {
+      const createdDate = new Date(cls.createdAt || '');
+      return createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
+    }).length;
+    setNewClassesThisMonth(newClassesCount);
+
+    // Calculate today's attendance percentage
+    const today = new Date().toISOString().split('T')[0];
+    const todayAttendance = attendanceRes.data.filter(record =>
+      record.date.slice(0, 10) === today
+    );
+    const presentCount = todayAttendance.filter(record => record.status === 'present').length;
+    const attendancePercentage = todayAttendance.length > 0
+      ? Math.round((presentCount / todayAttendance.length) * 100)
+      : 0;
+    setTodayAttendancePercentage(attendancePercentage);
+
+    // Calculate yesterday's attendance percentage for trend
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayAttendance = attendanceRes.data.filter(record =>
+      record.date.slice(0, 10) === yesterdayStr
+    );
+    const yesterdayPresentCount = yesterdayAttendance.filter(record => record.status === 'present').length;
+    const yesterdayAttendancePercentage = yesterdayAttendance.length > 0
+      ? Math.round((yesterdayPresentCount / yesterdayAttendance.length) * 100)
+      : 0;
+    setAttendanceTrend(attendancePercentage - yesterdayAttendancePercentage);
+
+    // Calculate payment status percentage (students who paid this month)
+    const thisMonthPayments = paymentsRes.data.filter(payment => {
+      const paymentDate = new Date(payment.date);
+      return paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear;
+    });
+    const studentsWithPayments = new Set(thisMonthPayments.map(payment => payment.studentId));
+    const paymentPercentage = studentsRes.data.length > 0
+      ? Math.round((studentsWithPayments.size / studentsRes.data.length) * 100)
+      : 0;
+    setPaymentStatusPercentage(paymentPercentage);
+
+    // Calculate last month's payment percentage for trend
+    const lastMonthDate = new Date();
+    lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+    const lastMonth = lastMonthDate.getMonth();
+    const lastMonthYear = lastMonthDate.getFullYear();
+
+    const lastMonthPayments = paymentsRes.data.filter(payment => {
+      const paymentDate = new Date(payment.date);
+      return paymentDate.getMonth() === lastMonth && paymentDate.getFullYear() === lastMonthYear;
+    });
+    const lastMonthStudentsWithPayments = new Set(lastMonthPayments.map(payment => payment.studentId));
+    const lastMonthPaymentPercentage = studentsRes.data.length > 0
+      ? Math.round((lastMonthStudentsWithPayments.size / studentsRes.data.length) * 100)
+      : 0;
+
+    setPaymentTrend(paymentPercentage - lastMonthPaymentPercentage);
+  };
+
+  const loadClassesData = async () => {
+    const classesRes = await classesApi.getAll(teacherId);
+    setClasses(classesRes.data);
+    if (classesRes.data.length > 0 && !selectedClass) {
+      setSelectedClass(classesRes.data[0]);
+    }
+  };
+
+  const loadStudentsData = async () => {
+    const studentsRes = await studentsApi.getAll(teacherId);
+    setStudents(studentsRes.data);
   };
 
   const handleCreateClass = async () => {
@@ -492,11 +550,12 @@ function TeacherDashboardContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading dashboard...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <LoadingSpinner
+          size="lg"
+          message="Loading your dashboard..."
+          className="py-20"
+        />
       </div>
     );
   }
@@ -513,6 +572,15 @@ function TeacherDashboardContent() {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {tabLoading && (
+          <div className="mb-6">
+            <LoadingSpinner
+              size="sm"
+              message="Loading tab content..."
+            />
+          </div>
+        )}
+
         {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">

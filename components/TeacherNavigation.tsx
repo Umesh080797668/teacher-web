@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
 import { useTheme } from '@/lib/ThemeContext';
@@ -10,7 +10,7 @@ interface TeacherNavigationProps {
   onTabChange?: (tab: string) => void;
 }
 
-export default function TeacherNavigation({ activeTab, onTabChange }: TeacherNavigationProps) {
+function TeacherNavigation({ activeTab, onTabChange }: TeacherNavigationProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
@@ -196,3 +196,5 @@ export default function TeacherNavigation({ activeTab, onTabChange }: TeacherNav
     </>
   );
 }
+
+export default memo(TeacherNavigation);
