@@ -150,3 +150,32 @@ export interface AuthResponse {
   token?: string;
   message?: string;
 }
+
+export interface QuizQuestion {
+  text: string;
+  options: string[];
+  correctOptionIndex: number;
+  marks: number;
+}
+
+export interface Quiz {
+  _id: string;
+  title: string;
+  description?: string;
+  teacherId: string;
+  questions: QuizQuestion[];
+  duration: number; // minutes
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface QuizResult {
+  _id: string;
+  studentId: string | Student;
+  quizId: string | Quiz;
+  answers: number[];
+  score: number;
+  totalMarks: number;
+  submittedAt: string;
+}

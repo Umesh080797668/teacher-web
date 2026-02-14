@@ -1,5 +1,5 @@
 import axios, { InternalAxiosRequestConfig } from 'axios';
-import type { Teacher, Student, Class, Attendance, Payment } from './types';
+import type { Teacher, Student, Class, Attendance, Payment, Quiz, QuizResult } from './types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
